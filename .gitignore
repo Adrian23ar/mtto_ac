@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Contenido para añadir al final de tu archivo .gitignore
+
+.env

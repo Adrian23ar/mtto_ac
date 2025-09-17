@@ -18,13 +18,8 @@ const handleLogin = async () => {
     try {
         // 3.1 Transforma el usuario a un email ficticio
         const fakeEmail = `${usuario.value}@hotelchacaosuites.com`;
-  console.log('Intentando iniciar sesión con este email:', fakeEmail);
-
         // 3.2 Llama a la función de Firebase con la sintaxis correcta
         const userCredential = await signInWithEmailAndPassword(auth, fakeEmail, password.value);
-
-        // 3.3 Si la línea de arriba funciona, ¡el login fue un éxito!
-        console.log('Login exitoso, bienvenido!', userCredential.user);
 
         // 3.4 Redirige al usuario al dashboard
         router.push('/dashboard'); // Asegúrate de tener esta ruta en tu router
