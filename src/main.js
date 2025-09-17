@@ -5,20 +5,37 @@ import './style.css'
 import App from './App.vue'
 import router from './router'
 
+// --- 1. Importamos la librería y su CSS ---
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+
 import { auth } from './firebase/config'
 import { onAuthStateChanged } from 'firebase/auth'
 
-// 2. Declaramos la variable de la app pero no la montamos todavía
 let app;
 
-// 3. onAuthStateChanged es un observador que se activa
-//    cuando Firebase determina el estado de la sesión.
 onAuthStateChanged(auth, (user) => {
-  // 4. Solo queremos montar la aplicación UNA VEZ.
-  //    Si 'app' no ha sido creada, la creamos y la montamos.
   if (!app) {
     app = createApp(App)
     app.use(router)
+
+    // --- 2. Registramos el plugin con algunas opciones recomendadas ---
+    const options = {
+      position: "top-right",
+      timeout: 2500,
+      closeOnClick: true,
+      pauseOnFocusLoss: true,
+      pauseOnHover: true,
+      draggable: true,
+      draggablePercent: 0.6,
+      showCloseButtonOnHover: false,
+      hideProgressBar: false,
+      closeButton: "button",
+      icon: true,
+      rtl: false
+    };
+    app.use(Toast, options);
+
     app.mount('#app')
   }
 });

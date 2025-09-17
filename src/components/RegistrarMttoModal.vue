@@ -1,6 +1,7 @@
 <script setup>
 // src/components/RegistrarMttoModal.vue
 import { ref, watch } from 'vue';
+import { useToast } from 'vue-toastification';
 import { getFirestore, doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { auth } from '../firebase/config';
 
@@ -11,6 +12,7 @@ const props = defineProps({
 });
 const emit = defineEmits(['close']);
 
+const toast = useToast();
 const tipoMantenimiento = ref('Preventivo');
 const duracion = ref(30);
 const observaciones = ref('');
@@ -31,6 +33,16 @@ watch(() => props.show, (newValue) => {
 });
 
 const handleSubmit = async () => {
+    // --- NUEVO BLOQUE DE VALIDACIÓN ---
+    const totalTareasSeleccionadas = Object.values(tareasCompletadas.value).filter(Boolean).length;
+    const observacionEscrita = observaciones.value.trim() !== '';
+
+    if (totalTareasSeleccionadas === 0 && !observacionEscrita) {
+        toast.error('Debes seleccionar al menos una tarea o escribir una observación.');
+        return; // Detiene la ejecución de la función aquí
+    }
+    // --- FIN DEL BLOQUE DE VALIDACIÓN ---
+
     if (isSaving.value) return;
     isSaving.value = true;
 
@@ -84,10 +96,12 @@ const handleSubmit = async () => {
         batch.update(equipoRef, datosActualizacionEquipo);
 
         await batch.commit();
+        toast.success('¡Mantenimiento registrado con éxito!'); // <-- REEMPLAZO
         emit('close');
 
     } catch (error) {
         console.error("Error al guardar el mantenimiento: ", error);
+        toast.error("Hubo un error al guardar. Intenta de nuevo."); // <-- REEMPLAZO
     } finally {
         isSaving.value = false;
     }
@@ -123,10 +137,10 @@ const handleSubmit = async () => {
                                 <div v-if="openSection === 'preventivas'" class="py-3 px-2 space-y-2">
                                     <div v-for="tarea in tareasDefinidas.preventivas" :key="tarea.key"
                                         class="flex items-center">
-                                        <input type="checkbox" :id="tarea.key" v-model="tareasCompletadas[tarea.key]"
+                                        <input type="checkbox" :id="tarea.key" v-model="tareasCompletadas[tarea.key] "
                                             class="h-4 w-4 rounded border-gray-300 text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-gray-900">{{ tarea.label
-                                        }}</label>
+                                            }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -152,7 +166,7 @@ const handleSubmit = async () => {
                                         <input type="checkbox" :id="tarea.key" v-model="tareasCompletadas[tarea.key]"
                                             class="h-4 w-4 rounded border-gray-300 text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-gray-900">{{ tarea.label
-                                            }}</label>
+                                        }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -163,7 +177,7 @@ const handleSubmit = async () => {
                         <div>
                             <label for="duracion" class="block text-sm font-semibold text-gray-700 mb-1">Duración
                                 (minutos)</label>
-                            <input type="number" id="duracion" v-model="duracion" class="w-full p-2 border rounded-md">
+                            <input type="number" id="duracion" required min="1" v-model="duracion" class="w-full p-2 border rounded-md">
                         </div>
                         <div>
                             <label for="observaciones"

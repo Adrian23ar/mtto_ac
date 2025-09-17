@@ -72,7 +72,7 @@ const estadoMantenimiento = computed(() => {
             {{ estadoMantenimiento.texto }}
           </span>
           <p class="text-sm text-gray-600 mt-2">{{ equipo.ubicacion_condensadora || 'Sin ubicación' }}</p>
-          <p class="text-lg font-bold text-gray-800 mt-1">{{ equipo.capacidad_btu }} BTU</p>
+          <p class="text-lg font-bold text-gray-800 mt-1">{{ equipo.capacidad_btu }}</p>
         </div>
 
         <div class="border-t mt-3 pt-3 flex justify-between text-xs text-gray-500">

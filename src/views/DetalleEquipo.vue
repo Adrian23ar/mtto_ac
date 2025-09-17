@@ -2,7 +2,7 @@
 // src/views/DetalleEquipo.vue
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-// 1. Importa 'doc' y 'updateDoc' de Firestore
+import { useToast } from 'vue-toastification';
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import RegistrarMttoModal from '../components/RegistrarMttoModal.vue';
 import HistorialCard from '../components/HistorialCard.vue';
@@ -10,6 +10,7 @@ import HistorialCard from '../components/HistorialCard.vue';
 import { PencilSquareIcon, CheckIcon, XMarkIcon, Cog6ToothIcon, DocumentTextIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline';
 
 // --- (refs existentes) ---
+const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const equipo = ref(null);
@@ -75,20 +76,23 @@ const cancelEditing = () => {
     formData.value = {}; // Limpiamos los datos temporales
 };
 const saveChanges = async () => {
+    if (!formData.value.ubicacion_condensadora || formData.value.ubicacion_condensadora.trim() === '') {
+        toast.error('El campo "Ubicación" no puede estar vacío.');
+        return;
+    }
+    if (!formData.value.intervalo_mantenimiento_dias || formData.value.intervalo_mantenimiento_dias <= 0) {
+        toast.error('El intervalo de mantenimiento debe ser un número mayor a 0.');
+        return;
+    }
     try {
         const docRef = doc(db, 'equipos', equipoId);
-        // Usamos los datos del formulario temporal para actualizar Firestore
         await updateDoc(docRef, formData.value);
-
-        // Actualizamos el estado local para que la UI se refresque al instante
         equipo.value = { ...formData.value };
-
-        // Cerramos todos los modos de edición
         cancelEditing();
-        alert('¡Equipo actualizado con éxito!');
+        toast.success('¡Equipo actualizado con éxito!'); // <-- REEMPLAZO
     } catch (error) {
         console.error("Error al actualizar el equipo: ", error);
-        alert("Hubo un error al guardar los cambios.");
+        toast.error("Hubo un error al guardar los cambios."); // <-- REEMPLAZO
     }
 };
 
@@ -104,15 +108,11 @@ const toggleFueraDeServicio = async () => {
             const docRef = doc(db, 'equipos', equipoId);
             const nuevoEstado = !equipo.value.fuera_de_servicio; // Invertimos el estado actual
 
-            await updateDoc(docRef, {
-                fuera_de_servicio: nuevoEstado
-            });
-            // No necesitamos actualizar 'equipo.value' manualmente aquí.
-            // El listener onSnapshot que ya tenemos se encargará de refrescar la UI automáticamente.
-            alert('Estado de servicio actualizado con éxito.');
+            await updateDoc(docRef, { fuera_de_servicio: nuevoEstado });
+            toast.success('Estado de servicio actualizado.'); // <-- REEMPLAZO
         } catch (error) {
             console.error("Error al actualizar el estado de servicio:", error);
-            alert("Hubo un error al actualizar el estado.");
+            toast.error("Hubo un error al actualizar el estado."); // <-- REEMPLAZO
         }
     }
 };
@@ -147,25 +147,35 @@ const tareasDefinidas = ref({
     ]
 });
 
+const opcionesCapacidad = ref([
+    '12,000 BTU',
+    '18,000 BTU',
+    '24,000 BTU',
+    '36,000 BTU',
+    '48,000 BTU',
+    '5 Toneladas',
+    '7.5 Toneladas',
+    '10 Toneladas'
+]);
 const formatDate = (dateInput) => {
-  // Si no hay fecha de entrada, devolvemos 'N/A'
-  if (!dateInput) return 'N/A';
+    // Si no hay fecha de entrada, devolvemos 'N/A'
+    if (!dateInput) return 'N/A';
 
-  let date; // Esta variable guardará un objeto de fecha estándar de JS
+    let date; // Esta variable guardará un objeto de fecha estándar de JS
 
-  // Comprobamos si el input es un Timestamp de Firebase (si tiene el método .toDate)
-  if (typeof dateInput.toDate === 'function') {
-    date = dateInput.toDate();
-  } else {
-    // Si no, asumimos que ya es un objeto de fecha estándar
-    date = dateInput;
-  }
+    // Comprobamos si el input es un Timestamp de Firebase (si tiene el método .toDate)
+    if (typeof dateInput.toDate === 'function') {
+        date = dateInput.toDate();
+    } else {
+        // Si no, asumimos que ya es un objeto de fecha estándar
+        date = dateInput;
+    }
 
-  // El resto de la función es igual
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-  return `${day}/${month}/${year}`;
+    // El resto de la función es igual
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
 };
 
 const estadoGeneral = computed(() => {
@@ -263,16 +273,15 @@ onMounted(async () => {
                 <div class="text-sm space-y-3">
                     <div>
                         <label class="font-semibold text-gray-800">Ubicación</label>
-                        <input v-model="formData.ubicacion_condensadora" type="text"
+                        <input v-model="formData.ubicacion_condensadora" type="text" required
                             class="w-full p-2 mt-1 border rounded-md">
                     </div>
                     <div>
                         <label class="font-semibold text-gray-800">Capacidad</label>
-                        <select v-model="formData.capacidad_btu" class="w-full p-2 mt-1 border rounded-md">
-                            <option>12,000 BTU</option>
-                            <option>24,000 BTU</option>
-                            <option>5 Toneladas</option>
-                            <option>15 Toneladas</option>
+                        <select v-model="formData.capacidad_btu" required class="w-full p-2 mt-1 border rounded-md">
+                            <option v-for="opcion in opcionesCapacidad" :key="opcion" :value="opcion">
+                                {{ opcion }}
+                            </option>
                         </select>
                     </div>
                     <div>
@@ -369,7 +378,7 @@ onMounted(async () => {
                 </div>
                 <div class="text-sm">
                     <label class="font-semibold text-gray-800">Intervalo de Mantenimiento (días)</label>
-                    <input v-model="formData.intervalo_mantenimiento_dias" type="number"
+                    <input v-model="formData.intervalo_mantenimiento_dias" type="number" required
                         class="w-full p-2 mt-1 border rounded-md">
                     <p class="text-xs text-gray-500 mt-2">Número de días entre mantenimientos preventivos</p>
                 </div>
