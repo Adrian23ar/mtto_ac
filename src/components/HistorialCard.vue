@@ -14,10 +14,10 @@ const formatDate = (timestamp) => {
 
 <template>
     <div class="bg-gray-50 border rounded-lg p-4">
-        <div class="flex justify-between items-start border-b pb-2 mb-3">
+        <div class="flex justify-between flex-wrap items-start border-b pb-2 mb-3">
             <div>
                 <p class="font-bold text-gray-800">{{ formatDate(mantenimiento.fecha_realizado) }}</p>
-                <p class="text-sm text-gray-500">Técnico: {{ mantenimiento.tecnico_email }}</p>
+                <p class="text-sm text-gray-500 mb-0 sm:mb-1">Técnico: {{ mantenimiento.tecnico_email }}</p>
             </div>
 
             <div class="flex items-end gap-2">
