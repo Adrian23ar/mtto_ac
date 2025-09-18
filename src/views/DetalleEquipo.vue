@@ -532,12 +532,12 @@ const estadoGeneral = computed(() => {
                 </div>
 
                 <div class="fixed bottom-0 left-0 right-0 bg-card p-4 border border-borde border-t shadow-lg">
-                    <div class="w-4/5 md:w-2/3 lg:w-1/2 mx-auto flex gap-3">
+                    <div class="w-full sm:w-4/5 md:w-2/3 lg:w-1/2 mx-auto flex gap-3">
                         <button @click="showModal = true"
-                            class="w-full bg-interactivo text-white py-3 px-2 rounded-lg font-semibold hover:bg-interactivo-dark transition-all">Registrar
+                            class="w-full bg-interactivo text-sm text-white py-3 px-2 rounded-lg font-semibold hover:bg-interactivo-dark transition-all">Registrar
                             Mantenimiento</button>
                         <button @click="showProgramarModal = true"
-                            class="w-full bg-gray-200 text-gray-700 py-3 px-2 rounded-lg font-semibold hover:bg-gray-300 transition-all">Programar
+                            class="w-full bg-gray-200 text-sm text-gray-700 py-3 px-2 rounded-lg font-semibold hover:bg-gray-300 transition-all">Programar
                             Mantenimiento</button>
                     </div>
 

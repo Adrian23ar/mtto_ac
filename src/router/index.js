@@ -12,6 +12,7 @@ import ReportesView from '../views/Reportes.vue';
 
 import AdminWrapper from '../views/admin/AdminWrapper.vue';
 import GestionUsuariosView from '../views/admin/GestionUsuarios.vue';
+import GestionEquiposView from '../views/admin/GestionEquipos.vue';
 
 const routes = [
     {
@@ -51,7 +52,11 @@ const routes = [
                 name: 'admin-usuarios',
                 component: GestionUsuariosView,
             },
-            // Aquí irán otras rutas de admin en el futuro...
+            {
+                path: 'equipos',
+                name: 'admin-equipos',
+                component: GestionEquiposView,
+            }
         ]
     }
 ];

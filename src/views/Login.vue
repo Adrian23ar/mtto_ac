@@ -49,7 +49,7 @@ const handleLogin = async () => {
 };
 </script>
 <template>
-    <div class="bg-interactivo h-screen flex justify-center items-center">
+    <div class="bg-interactivo h-screen flex justify-center items-center p-4">
 
         <div class="w-full max-w-md">
             <div class="text-center text-white mb-6">
@@ -69,12 +69,12 @@ const handleLogin = async () => {
                     <div class="mb-4">
                         <label for="usuario" class="block text-gray-700 text-sm mb-1">Usuario</label>
                         <input type="usuario" v-model="usuario" id="usuario" required
-                            class="w-full p-[6px] border rounded-md bg-gray-50 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
+                            class="w-full p-[6px] border rounded-md bg-gray-100 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
                     </div>
                     <div class="mb-6">
                         <label for="password" class="block text-gray-700 text-sm mb-1">Contraseña</label>
                         <input type="password" v-model="password" id="password" required
-                            class="w-full p-[6px] border rounded-md bg-gray-50 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
+                            class="w-full p-[6px] border rounded-md bg-gray-100 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
                     </div>
                     <button type="submit" :disabled="isLoading"
                         class="w-full bg-interactivo hover:bg-opacity-90 text-sm text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">

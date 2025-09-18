@@ -89,17 +89,18 @@ const firebaseConfig = {
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-texto-principal">Gestión de Usuarios</h1>
-        <p class="text-texto-secundario">Aquí podrás crear, ver, editar y eliminar usuarios.</p>
+        <h1 class="text-xl font-bold text-texto-principal">Gestión de Usuarios</h1>
+        <p class="text-texto-secundario text-sm">Aquí podrás crear, ver, editar y eliminar usuarios.</p>
       </div>
-      <button @click="showCrearModal = true" class="bg-interactivo text-white py-2 px-4 rounded-lg font-semibold">
+      <button @click="showCrearModal = true"
+        class="bg-interactivo text-white text-sm md:text-base py-2 px-4 rounded-lg font-semibold">
         Crear Usuario
       </button>
     </div>
 
     <div v-if="cargando">Cargando...</div>
-    <div v-else class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-      <table class="w-full text-sm text-left">
+    <div v-else class="bg-card p-4 rounded-lg overflow-x-auto">
+      <table class="w-full text-sm text-left ">
         <thead class="text-xs text-texto-secundario uppercase bg-fondo">
           <tr>
             <th class="px-6 py-3">Nombre Completo</th>
