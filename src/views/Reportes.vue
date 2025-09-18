@@ -22,6 +22,11 @@ const generarReporte = async () => {
         return;
     }
 
+    if (new Date(fechaFin.value) < new Date(fechaInicio.value)) {
+        toast.error('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        return;
+    }
+
     generando.value = true;
     resultados.value = null;
     detalles.value = [];
@@ -84,8 +89,8 @@ const generarReporte = async () => {
     <div class="space-y-6">
         <div class="flex items-center gap-3">
             <button @click="router.back()" class="text-texto-secundario hover:text-gray-900 text-2xl font-bold">
-                        <ArrowLeftIcon class="h-6 w-6" />
-                    </button>
+                <ArrowLeftIcon class="h-6 w-6" />
+            </button>
             <h1 class="text-2xl font-bold text-texto-principal">Reportes de Mantenimiento</h1>
         </div>
         <p class="text-texto-secundario">Genera un resumen de la actividad por rango de fechas.</p>

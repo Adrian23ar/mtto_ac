@@ -3,11 +3,13 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
 import RegistrarMttoModal from '../components/RegistrarMttoModal.vue';
 import HistorialCard from '../components/HistorialCard.vue';
 import ConfirmacionModal from '../components/ConfirmacionModal.vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue'; // <-- Importa el skeleton
+import ProgramarMttoModal from '../components/ProgramarMttoModal.vue';
+import ProgramacionCard from '../components/ProgramacionCard.vue';
 
 import { PencilSquareIcon, CheckIcon, XMarkIcon, Cog6ToothIcon, DocumentTextIcon, CalendarDaysIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline';
 
@@ -20,8 +22,18 @@ const cargando = ref(true);
 const showModal = ref(false);
 const db = getFirestore();
 const equipoId = route.params.id;
-const showConfirmModal = ref(false);
+const showProgramarModal = ref(false);
+const mantenimientosProgramados = ref([]);
+const historialMantenimientos = ref([]);
+const mantenimientoAEditar = ref(null);
+const programacionAEditar = ref(null);
 
+const confirmacionState = ref({
+    show: false,
+    titulo: '',
+    mensaje: '',
+    onConfirm: () => { } // Aquí guardaremos la función a ejecutar
+});
 
 // --- 2. NUEVAS VARIABLES DE ESTADO PARA LA EDICIÓN ---
 const isEditingInfo = ref(false);
@@ -30,8 +42,6 @@ const isEditingProgramacion = ref(false);
 
 // Objeto temporal para guardar los datos del formulario mientras se edita
 const formData = ref({});
-
-const historialMantenimientos = ref([]);
 
 onMounted(() => {
     // --- Esta parte para obtener los datos del equipo se mantiene igual ---
@@ -61,7 +71,90 @@ onMounted(() => {
         });
         historialMantenimientos.value = historicoTemp;
     });
+
+    const programadosQuery = query(
+        collection(db, "mantenimientos_programados"),
+        where("equipoId", "==", equipoId),      // Para este equipo
+        where("estado", "==", "Programado"),    // Que aún no se hayan completado
+        orderBy("fecha_programada", "asc") // El más cercano primero
+    );
+
+    onSnapshot(programadosQuery, (querySnapshot) => {
+        const programadosTemp = [];
+        querySnapshot.forEach((doc) => {
+            programadosTemp.push({ id: doc.id, ...doc.data() });
+        });
+        mantenimientosProgramados.value = programadosTemp;
+    });
 });
+
+const iniciarEdicionProgramacion = (programacion) => {
+    programacionAEditar.value = programacion;
+    showProgramarModal.value = true;
+};
+
+const cerrarModalProgramacion = () => {
+    showProgramarModal.value = false;
+    programacionAEditar.value = null;
+};
+
+const abrirConfirmacion = (titulo, mensaje, accionConfirmar) => {
+    confirmacionState.value = {
+        show: true,
+        titulo,
+        mensaje,
+        onConfirm: accionConfirmar
+    };
+};
+
+const manejarConfirmacion = () => {
+    if (typeof confirmacionState.value.onConfirm === 'function') {
+        confirmacionState.value.onConfirm();
+    }
+    cerrarConfirmacion();
+};
+
+const cerrarConfirmacion = () => {
+    confirmacionState.value.show = false;
+};
+
+const toggleFueraDeServicio = () => {
+    if (!equipo.value) return;
+    const nuevoEstadoTexto = equipo.value.fuera_de_servicio ? 'En Servicio' : 'Fuera de Servicio';
+
+    abrirConfirmacion(
+        'Confirmar Cambio de Estado',
+        `¿Estás seguro de que quieres poner este equipo como '${nuevoEstadoTexto}'?`,
+        async () => { // La lógica de la acción va aquí, como una función anónima
+            try {
+                const docRef = doc(db, 'equipos', equipoId);
+                const nuevoEstado = !equipo.value.fuera_de_servicio;
+                await updateDoc(docRef, { fuera_de_servicio: nuevoEstado });
+                toast.success('Estado de servicio actualizado.');
+            } catch (error) {
+                console.error("Error al actualizar estado:", error);
+                toast.error("Hubo un error al actualizar el estado.");
+            }
+        }
+    );
+};
+
+const iniciarBorrado = (item, coleccion) => {
+    abrirConfirmacion(
+        'Confirmar Eliminación',
+        '¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer.',
+        async () => { // La lógica de borrado va aquí
+            try {
+                const docRef = doc(db, coleccion, item.id);
+                await deleteDoc(docRef);
+                toast.success('Registro eliminado con éxito.');
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+                toast.error("Hubo un error al eliminar el registro.");
+            }
+        }
+    );
+};
 
 const startEditing = (section) => {
     // Creamos una copia de los datos actuales para no modificar el original directamente
@@ -98,24 +191,16 @@ const saveChanges = async () => {
     }
 };
 
-const toggleFueraDeServicio = () => {
-    if (!equipo.value) return;
-    showConfirmModal.value = true;
+// 2. Crea la función que abre el modal en modo edición
+const iniciarEdicion = (mantenimiento) => {
+    mantenimientoAEditar.value = mantenimiento; // Guarda el mantenimiento a editar
+    showModal.value = true; // Abre el modal de registro
 };
 
-// 4. Crea una NUEVA función que contenga la lógica de guardado.
-//    Esta función será llamada por el modal cuando el usuario confirme.
-const ejecutarToggleFueraDeServicio = async () => {
-    showConfirmModal.value = false; // Cerramos el modal
-    try {
-        const docRef = doc(db, 'equipos', equipoId);
-        const nuevoEstado = !equipo.value.fuera_de_servicio;
-        await updateDoc(docRef, { fuera_de_servicio: nuevoEstado });
-        toast.success('Estado de servicio actualizado.');
-    } catch (error) {
-        console.error("Error al actualizar el estado de servicio:", error);
-        toast.error("Hubo un error al actualizar el estado.");
-    }
+// 3. Modifica el @close del modal de registro para limpiar la variable de edición
+const cerrarModalRegistro = () => {
+    showModal.value = false;
+    mantenimientoAEditar.value = null; // Limpia al cerrar
 };
 
 const tareasDefinidas = ref({
@@ -181,6 +266,14 @@ const formatDate = (dateInput) => {
 
 const estadoGeneral = computed(() => {
     if (!equipo.value) return { texto: 'Cargando...', proximo: null };
+    if (mantenimientosProgramados.value.length > 0) {
+        // Asumimos que el más cercano es el primero de la lista ordenada
+        const proximoProgramado = mantenimientosProgramados.value[0].fecha_programada;
+        return {
+            texto: 'Mantenimiento Programado',
+            proximo: proximoProgramado.toDate()
+        };
+    }
     if (equipo.value.fuera_de_servicio) return { texto: 'Fuera de Servicio', proximo: null };
     if (!equipo.value.ultimo_mantenimiento) return { texto: 'Mantenimiento Pendiente', proximo: null };
 
@@ -259,7 +352,7 @@ const estadoGeneral = computed(() => {
                         <div class="text-sm space-y-2 text-texto-secundario">
                             <p><span class="font-semibold text-texto-principal">Ubicación:</span> {{
                                 equipo.ubicacion_condensadora
-                            }}
+                                }}
                             </p>
                             <p><span class="font-semibold text-texto-principal">Capacidad:</span> {{
                                 equipo.capacidad_btu }}
@@ -303,7 +396,8 @@ const estadoGeneral = computed(() => {
                             </div>
                             <div>
                                 <label class="font-semibold text-texto-principal">Compresor</label>
-                                <select v-model="formData.estado_compresor" class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
+                                <select v-model="formData.estado_compresor"
+                                    class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
                                     <option>Bueno</option>
                                     <option>Regular</option>
                                     <option>Deficiente</option>
@@ -353,7 +447,7 @@ const estadoGeneral = computed(() => {
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="font-semibold text-texto-principal flex items-center gap-2">
                                 <CalendarDaysIcon class="h-5 w-5" />
-                                Programación de Mantenimiento
+                                Ciclo de Mantenimiento
                             </h2>
                             <button @click="startEditing('programacion')"
                                 class="text-gray-400/80 hover:text-texto-secundario p-1">
@@ -370,7 +464,7 @@ const estadoGeneral = computed(() => {
                             <div>
                                 <p class="text-texto-secundario">Último Mantenimiento</p>
                                 <p class="font-semibold text-texto-principal">{{ formatDate(equipo.ultimo_mantenimiento)
-                                    }}</p>
+                                }}</p>
                             </div>
                             <div>
                                 <p class="text-texto-secundario">Próximo Mantenimiento</p>
@@ -388,7 +482,7 @@ const estadoGeneral = computed(() => {
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="font-semibold text-texto-principal flex items-center gap-2">
                                 <CalendarDaysIcon class="h-5 w-5" />
-                                Editando Programación
+                                Editando Ciclo de Mantenimiento
                             </h2>
                             <div class="flex gap-2">
                                 <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
@@ -410,6 +504,20 @@ const estadoGeneral = computed(() => {
                 </div>
 
                 <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                    <h2 class="font-semibold text-texto-principal mb-4">Mantenimientos Programados</h2>
+
+                    <div v-if="mantenimientosProgramados.length > 0" class="space-y-3">
+                        <ProgramacionCard v-for="prog in mantenimientosProgramados" :key="prog.id" :programacion="prog"
+                            @borrar="iniciarBorrado(prog, 'mantenimientos_programados')"
+                            @editar="iniciarEdicionProgramacion(prog)" />
+                    </div>
+
+                    <div v-else class="text-center text-texto-secundario text-sm py-4">
+                        <p>No hay mantenimientos programados para este equipo.</p>
+                    </div>
+                </div>
+
+                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
                     <h2 class="font-semibold text-texto-principal mb-4">Historial de Mantenimiento</h2>
 
                     <div v-if="historialMantenimientos.length === 0" class="text-center text-texto-secundario py-8">
@@ -418,14 +526,18 @@ const estadoGeneral = computed(() => {
                     </div>
 
                     <div v-else class="space-y-4">
-                        <HistorialCard v-for="mtto in historialMantenimientos" :key="mtto.id" :mantenimiento="mtto" />
+                        <HistorialCard v-for="mtto in historialMantenimientos" :key="mtto.id" :mantenimiento="mtto"
+                            @borrar="iniciarBorrado(mtto, 'mantenimientos')" @editar="iniciarEdicion(mtto)" />
                     </div>
                 </div>
 
                 <div class="fixed bottom-0 left-0 right-0 bg-card p-4 border border-borde border-t shadow-lg">
-                    <div class="w-4/5 md:w-2/3 lg:w-1/2 mx-auto">
+                    <div class="w-4/5 md:w-2/3 lg:w-1/2 mx-auto flex gap-3">
                         <button @click="showModal = true"
-                            class="w-full bg-interactivo text-card py-3 px-2 rounded-lg font-semibold hover:bg-interactivo-dark transition-all">Registrar
+                            class="w-full bg-interactivo text-white py-3 px-2 rounded-lg font-semibold hover:bg-interactivo-dark transition-all">Registrar
+                            Mantenimiento</button>
+                        <button @click="showProgramarModal = true"
+                            class="w-full bg-gray-200 text-gray-700 py-3 px-2 rounded-lg font-semibold hover:bg-gray-300 transition-all">Programar
                             Mantenimiento</button>
                     </div>
 
@@ -433,14 +545,17 @@ const estadoGeneral = computed(() => {
                 </div>
             </div>
 
-            <ConfirmacionModal :show="showConfirmModal" titulo="Confirmar Cambio de Estado"
-                :mensaje="`¿Estás seguro de que quieres poner este equipo como '${equipo.fuera_de_servicio ? 'En Servicio' : 'Fuera de Servicio'}'?`"
-                textoConfirmar="Sí, cambiar estado" @close="showConfirmModal = false"
-                @confirm="ejecutarToggleFueraDeServicio" />
+            <ConfirmacionModal :show="confirmacionState.show" :titulo="confirmacionState.titulo"
+                :mensaje="confirmacionState.mensaje" textoConfirmar="Sí, confirmar" @close="cerrarConfirmacion"
+                @confirm="manejarConfirmacion" />
         </div>
 
         <RegistrarMttoModal v-if="showModal" :show="showModal" :equipoId="equipoId" :tareasDefinidas="tareasDefinidas"
-            @close="showModal = false" />
+            :mantenimientoExistente="mantenimientoAEditar" @close="cerrarModalRegistro" />
+
+        <ProgramarMttoModal v-if="showProgramarModal" :show="showProgramarModal" :equipoId="equipoId"
+            :numeroHabitacion="equipo.numero_habitacion" :programacionExistente="programacionAEditar"
+            @close="cerrarModalProgramacion" />
 
     </div>
 

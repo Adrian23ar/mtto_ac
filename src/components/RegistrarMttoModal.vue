@@ -1,20 +1,23 @@
 <script setup>
 // src/components/RegistrarMttoModal.vue
-import { ref, watch } from 'vue';
+import { ref, watch, watchEffect } from 'vue';
 import { useToast } from 'vue-toastification';
 import { getFirestore, doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { auth } from '../firebase/config';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
 
 const props = defineProps({
     show: { type: Boolean, default: false },
     equipoId: { type: String, required: true },
-    tareasDefinidas: { type: Object, required: true }
-});
-const emit = defineEmits(['close']);
+    tareasDefinidas: { type: Object, required: true },
+    mantenimientoExistente: { type: Object, default: null } // 1. Acepta el nuevo prop
 
+});
+
+const emit = defineEmits(['close']);
+const { userProfile } = useAuth(); // <-- Obtén el perfil del usuario
 const toast = useToast();
-const tipoMantenimiento = ref('Preventivo');
 const duracion = ref(30);
 const observaciones = ref('');
 const tareasCompletadas = ref({});
@@ -33,8 +36,26 @@ watch(() => props.show, (newValue) => {
     }
 });
 
+watchEffect(() => {
+    if (props.show && props.mantenimientoExistente) {
+        // Si estamos en modo edición, llenamos el formulario con los datos existentes
+        observaciones.value = props.mantenimientoExistente.observaciones_servicio;
+        duracion.value = props.mantenimientoExistente.duracion_minutos;
+
+        const completadas = {};
+        // Marcamos los checkboxes de las tareas que ya se habían realizado
+        const todasLasTareas = [...props.tareasDefinidas.preventivas, ...props.tareasDefinidas.correctivas];
+        todasLasTareas.forEach(tareaDefinida => {
+            if (props.mantenimientoExistente.tareas_realizadas.preventivas.includes(tareaDefinida.label) ||
+                props.mantenimientoExistente.tareas_realizadas.correctivas.includes(tareaDefinida.label)) {
+                completadas[tareaDefinida.key] = true;
+            }
+        });
+        tareasCompletadas.value = completadas;
+    }
+});
+
 const handleSubmit = async () => {
-    // --- NUEVO BLOQUE DE VALIDACIÓN ---
     const totalTareasSeleccionadas = Object.values(tareasCompletadas.value).filter(Boolean).length;
     const observacionEscrita = observaciones.value.trim() !== '';
 
@@ -70,39 +91,58 @@ const handleSubmit = async () => {
             tipoPrincipal = 'Correctivo';
         }
 
-        batch.set(mantenimientoRef, {
-            equipoId: props.equipoId,
-            tipo: tipoPrincipal, // Guardamos un tipo principal para el resumen
-            duracion_minutos: duracion.value,
-            observaciones_servicio: observaciones.value,
-            tareas_realizadas: tareasRealizadas, // Guardamos el objeto completo
-            fecha_realizado: serverTimestamp(),
-            tecnico_uid: user.uid,
-            tecnico_email: user.email
-        });
+        if (props.mantenimientoExistente) {
+            // MODO EDICIÓN: Actualizamos el documento existente
+            const mantenimientoRef = doc(db, 'mantenimientos', props.mantenimientoExistente.id);
+            // Solo actualizamos los campos que se pueden cambiar, no sobreescribimos todo
+            batch.update(mantenimientoRef, {
+                duracion_minutos: duracion.value,
+                observaciones_servicio: observaciones.value,
+                tareas_realizadas: tareasRealizadas,
+                tipo: tipoPrincipal
+            });
+            // No necesitamos actualizar el equipo aquí, solo el registro de mantenimiento
+            await batch.commit();
+            toast.success('¡Mantenimiento actualizado con éxito!');
+        } else {
+            batch.set(mantenimientoRef, {
+                equipoId: props.equipoId,
+                tipo: tipoPrincipal, // Guardamos un tipo principal para el resumen
+                duracion_minutos: duracion.value,
+                observaciones_servicio: observaciones.value,
+                tareas_realizadas: tareasRealizadas, // Guardamos el objeto completo
+                fecha_realizado: serverTimestamp(),
+                tecnico_uid: user.uid,
+                tecnico_email: user.email,
+                tecnico_nombre: userProfile.value?.nombre_completo || user.email // <-- AÑADE ESTA LÍNEA
 
-        const equipoRef = doc(db, 'equipos', props.equipoId);
-        const datosActualizacionEquipo = {
-            ultimo_mantenimiento: serverTimestamp(),
-        };
+            });
 
-        // Aquí actualizaremos solo las tareas que definimos como "críticas"
-        const tareasCriticasKeys = ['cambio_baterias_termostato', 'cambio_rodamientos_condensador', 'cambio_rodamientos_motor_evaporador', 'lavado_unidad_evaporadora', 'lavado_unidad_condensadora', 'cambio_capacitor'];
-        Object.keys(tareasCompletadas.value).forEach(key => {
-            if (tareasCompletadas.value[key] && tareasCriticasKeys.includes(key)) {
-                datosActualizacionEquipo[`tareas_criticas.${key}`] = serverTimestamp();
-            }
-        });
+            const equipoRef = doc(db, 'equipos', props.equipoId);
+            const datosActualizacionEquipo = {
+                ultimo_mantenimiento: serverTimestamp(),
+            };
 
-        batch.update(equipoRef, datosActualizacionEquipo);
+            // Aquí actualizaremos solo las tareas que definimos como "críticas"
+            const tareasCriticasKeys = ['cambio_baterias_termostato', 'cambio_rodamientos_condensador', 'cambio_rodamientos_motor_evaporador', 'lavado_unidad_evaporadora', 'lavado_unidad_condensadora', 'cambio_capacitor'];
+            Object.keys(tareasCompletadas.value).forEach(key => {
+                if (tareasCompletadas.value[key] && tareasCriticasKeys.includes(key)) {
+                    datosActualizacionEquipo[`tareas_criticas.${key}`] = serverTimestamp();
+                }
+            });
 
-        await batch.commit();
-        toast.success('¡Mantenimiento registrado con éxito!'); // <-- REEMPLAZO
+            batch.update(equipoRef, datosActualizacionEquipo);
+
+            await batch.commit();
+            toast.success('¡Mantenimiento registrado con éxito!');
+        }
+
+
         emit('close');
 
     } catch (error) {
         console.error("Error al guardar el mantenimiento: ", error);
-        toast.error("Hubo un error al guardar. Intenta de nuevo."); // <-- REEMPLAZO
+        toast.error("Hubo un error al guardar. Intenta de nuevo.");
     } finally {
         isSaving.value = false;
     }
@@ -114,9 +154,11 @@ const handleSubmit = async () => {
         <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-full overflow-y-auto">
             <form @submit.prevent="handleSubmit">
                 <div class="p-4 border-b flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-gray-800">Registrar Nuevo Mantenimiento</h2>
-                    <button @click="$emit('close')" type="button"
-                        class="text-gray-400 hover:text-gray-700"><XMarkIcon class="h-6 w-6" /></button>
+                    <h2 class="text-xl font-bold text-gray-800"> {{ mantenimientoExistente ? 'Actualizar Registro de Mantenimiento' : 'Registrar Nuevo Mantenimiento' }}
+                    </h2>
+                    <button @click="$emit('close')" type="button" class="text-gray-400 hover:text-gray-700">
+                        <XMarkIcon class="h-6 w-6" />
+                    </button>
                 </div>
 
                 <div class="p-6 grid grid-cols-1 gap-6">
@@ -141,7 +183,7 @@ const handleSubmit = async () => {
                                         <input type="checkbox" :id="tarea.key" v-model="tareasCompletadas[tarea.key]"
                                             class="min-h-5 min-w-5 h-5 w-5 md:min-h-4 md:min-w-4 md:h-4 md:w-4 rounded border-gray-300 text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-gray-900">{{ tarea.label
-                                        }}</label>
+                                            }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -167,7 +209,7 @@ const handleSubmit = async () => {
                                         <input type="checkbox" :id="tarea.key" v-model="tareasCompletadas[tarea.key]"
                                             class="h-4 w-4 rounded border-gray-300 text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-gray-900">{{ tarea.label
-                                            }}</label>
+                                        }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -195,8 +237,7 @@ const handleSubmit = async () => {
                     <button @click="$emit('close')" type="button"
                         class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
                     <button type="submit" :disabled="isSaving"
-                        class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{
-                            isSaving ? 'Guardando...' : 'Guardar Registro' }}</button>
+                        class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{ isSaving ? 'Guardando...' : (mantenimientoExistente ? 'Actualizar Registro' : 'Guardar Registro') }}</button>
                 </div>
             </form>
         </div>

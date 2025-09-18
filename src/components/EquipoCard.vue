@@ -5,11 +5,12 @@ import {
   ExclamationTriangleIcon,
   WrenchScrewdriverIcon,
   MapPinIcon,
-  NoSymbolIcon
+  NoSymbolIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
   equipo: { type: Object, required: true },
+  programado: { type: Object, default: null } // <-- 1. Acepta el nuevo prop
 });
 
 const formatDate = (dateInput) => {
@@ -28,6 +29,15 @@ const formatDate = (dateInput) => {
 
 // Propiedad computada mejorada que devuelve un objeto con todos los estilos
 const estado = computed(() => {
+  if (props.programado) {
+    return {
+      texto: 'Programado',
+      claseHeader: 'bg-purple-600 text-white', // Un color distintivo para programados
+      clasePill: 'bg-purple-100 text-purple-800',
+      IconoHeader: CalendarDaysIcon,
+      proximo: props.programado.fecha_programada.toDate() // <-- Usa la fecha programada
+    };
+  }
   if (props.equipo.fuera_de_servicio) {
     return {
       texto: 'Fuera de Servicio',
@@ -89,7 +99,8 @@ const estado = computed(() => {
 <template>
   <router-link :to="{ name: 'detalle-equipo', params: { id: equipo.id } }" class="block h-full">
     <div class="bg-card rounded-lg shadow h-full flex flex-col hover:shadow-lg hover:scale-[101%] transition-all">
-
+<div v-if="programado" class="absolute top-14 right-4 text-purple-600">
+  </div>
       <div :class="estado.claseHeader" class="flex justify-between items-center p-3 rounded-t-lg">
         <div class="flex items-center gap-2">
           <component :is="estado.IconoHeader" class="h-5 w-5" />

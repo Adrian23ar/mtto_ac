@@ -3,7 +3,9 @@ import { useRouter } from 'vue-router';
 import { auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import ThemeToggle from '../components/ThemeToggle.vue'; // <-- 1. Importa el componente
+import { useAuth } from '../composables/useAuth';
 
+const { userProfile } = useAuth();
 const router = useRouter();
 
 const handleLogout = async () => {
@@ -23,7 +25,10 @@ const handleLogout = async () => {
         <h1 class="text-xl font-bold text-interactivo">Sistema de Mantenimiento</h1>
         <div class="flex items-center gap-4">
           <router-link to="/reportes"
-            class="text-sm font-semibold text-texto-secundario hover:text-texto-principal">Reportes</router-link>
+            class="text-sm font-semibold text-texto-secundario hover:text-texto-principal transition-all">Reportes</router-link>
+          <router-link v-if="userProfile?.rol === 'admin'" to="/admin/usuarios"
+            class="text-sm font-semibold text-texto-secundario hover:text-texto-principal transition-all">Admin</router-link>
+
 
           <ThemeToggle /> <button @click="handleLogout"
             class="bg-status-rojo text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors">

@@ -1,12 +1,13 @@
 <script setup>
 // src/views/Dashboard.vue
 import { ref, onMounted, computed } from 'vue';
-import { getFirestore, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import EquipoCard from '../components/EquipoCard.vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue'; // <-- 1. Importa el nuevo componente
 
 const db = getFirestore();
 const equipos = ref([]);
+const mantenimientosProgramados = ref([]); // <-- 1. Añade una ref para las programaciones
 const searchTerm = ref('');
 const activeFilter = ref('Todos');
 const cargando = ref(true); // <-- 2. Añade el estado de carga
@@ -78,6 +79,14 @@ onMounted(() => {
     cargando.value = false;
 
   });
+  const qProgramados = query(collection(db, "mantenimientos_programados"), where("estado", "==", "Programado"));
+  onSnapshot(qProgramados, (snapshot) => {
+    const programadosTemp = [];
+    snapshot.forEach((doc) => {
+      programadosTemp.push({ id: doc.id, ...doc.data() });
+    });
+    mantenimientosProgramados.value = programadosTemp;
+  });
 });
 </script>
 
@@ -142,7 +151,8 @@ onMounted(() => {
 
     <div v-else-if="equiposFiltrados.length > 0"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <EquipoCard v-for="equipo in equiposFiltrados" :key="equipo.id" :equipo="equipo" />
+      <EquipoCard v-for="equipo in equiposFiltrados" :key="equipo.id" :equipo="equipo"
+        :programado="mantenimientosProgramados.find(p => p.equipoId === equipo.id)" />
     </div>
     <div v-else class="text-center text-gray-500 mt-8">
       <p>Cargando equipos...</p>

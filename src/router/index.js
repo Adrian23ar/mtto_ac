@@ -1,6 +1,7 @@
 // src/router/index.js
 import { createWebHistory, createRouter } from 'vue-router';
 import { auth } from '../firebase/config'; // Importamos auth para revisar la sesión
+import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
 
 // Importamos nuestras vistas y el nuevo layout
 import LoginView from '../views/login.vue';
@@ -8,6 +9,9 @@ import DashboardView from '../views/Dashboard.vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import DetalleEquipoView from '../views/DetalleEquipo.vue'; // <-- Añade esta importación
 import ReportesView from '../views/Reportes.vue';
+
+import AdminWrapper from '../views/admin/AdminWrapper.vue';
+import GestionUsuariosView from '../views/admin/GestionUsuarios.vue';
 
 const routes = [
     {
@@ -37,6 +41,19 @@ const routes = [
             }
         ],
     },
+    {
+        path: '/admin',
+        component: AdminWrapper,
+        meta: { requiresAuth: true, requiresAdmin: true }, // <-- Doble protección
+        children: [
+            {
+                path: 'usuarios',
+                name: 'admin-usuarios',
+                component: GestionUsuariosView,
+            },
+            // Aquí irán otras rutas de admin en el futuro...
+        ]
+    }
 ];
 
 const router = createRouter({
@@ -46,17 +63,20 @@ const router = createRouter({
 
 // --- EL GUARDIA DE NAVEGACIÓN ---
 router.beforeEach((to, from, next) => {
+    const { userProfile } = useAuth(); // <-- Obtén el perfil del usuario
     const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+    const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
     const isAuthenticated = auth.currentUser;
+    const isAdmin = userProfile.value?.rol === 'admin';
 
     if (requiresAuth && !isAuthenticated) {
-        // Si la ruta requiere autenticación y no hay usuario, va para el login
         next('/login');
+    } else if (requiresAdmin && !isAdmin) { // <-- NUEVA REGLA
+        // Si la ruta requiere admin y el usuario no lo es, lo mandamos al dashboard
+        next('/dashboard');
     } else if (!requiresAuth && isAuthenticated && to.path === '/login') {
-        // Si el usuario ya está autenticado e intenta ir a login, lo mandamos al dashboard
         next('/dashboard');
     } else {
-        // En cualquier otro caso, dejamos que la navegación continúe
         next();
     }
 });

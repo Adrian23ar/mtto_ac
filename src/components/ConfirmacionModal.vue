@@ -39,7 +39,6 @@ defineEmits(['close', 'confirm']);
 </template>
 
 <style scoped>
-/* 3. Añadimos el CSS para la animación de entrada y salida */
 .modal-fade-enter-active,
 .modal-fade-leave-active {
     transition: all 0.2s ease-out;
