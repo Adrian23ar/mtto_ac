@@ -22,7 +22,11 @@ const handleLogout = async () => {
       <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
         <h1 class="text-xl font-bold text-interactivo">Sistema de Mantenimiento</h1>
         <div class="flex items-center gap-4">
-          <ThemeToggle /> <button @click="handleLogout" class="bg-status-rojo text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors">
+          <router-link to="/reportes"
+            class="text-sm font-semibold text-texto-secundario hover:text-texto-principal">Reportes</router-link>
+
+          <ThemeToggle /> <button @click="handleLogout"
+            class="bg-status-rojo text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors">
             Cerrar Sesión
           </button>
         </div>

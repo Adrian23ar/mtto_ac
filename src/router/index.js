@@ -7,6 +7,7 @@ import LoginView from '../views/login.vue';
 import DashboardView from '../views/Dashboard.vue';
 import AppLayout from '../layouts/AppLayout.vue';
 import DetalleEquipoView from '../views/DetalleEquipo.vue'; // <-- Añade esta importación
+import ReportesView from '../views/Reportes.vue';
 
 const routes = [
     {
@@ -28,6 +29,11 @@ const routes = [
                 path: 'equipo/:id', // ':id' es el parámetro dinámico
                 name: 'detalle-equipo',
                 component: DetalleEquipoView,
+            },
+            {
+                path: 'reportes',
+                name: 'reportes',
+                component: ReportesView,
             }
         ],
     },
