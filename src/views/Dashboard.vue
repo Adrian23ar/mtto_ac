@@ -3,11 +3,13 @@
 import { ref, onMounted, computed } from 'vue';
 import { getFirestore, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import EquipoCard from '../components/EquipoCard.vue';
+import SkeletonLoader from '../components/SkeletonLoader.vue'; // <-- 1. Importa el nuevo componente
 
 const db = getFirestore();
 const equipos = ref([]);
 const searchTerm = ref('');
 const activeFilter = ref('Todos');
+const cargando = ref(true); // <-- 2. Añade el estado de carga
 
 // Función auxiliar para obtener el estado de un equipo (similar a la de EquipoCard)
 const getEquipoStatus = (equipo) => {
@@ -45,6 +47,26 @@ const equiposFiltrados = computed(() => {
   return equiposTemp;
 });
 
+const conteoFiltros = computed(() => {
+  // Inicializamos un objeto contador
+  const conteos = {
+    'Todos': equipos.value.length,
+    'Al Día': 0,
+    'Próximo': 0,
+    'Vencido': 0,
+    'Fuera de Servicio': 0
+  };
+
+  // Iteramos sobre cada equipo UNA SOLA VEZ para contarlos
+  for (const equipo of equipos.value) {
+    const estado = getEquipoStatus(equipo);
+    if (conteos[estado] !== undefined) {
+      conteos[estado]++;
+    }
+  }
+  return conteos;
+});
+
 onMounted(() => {
   const q = query(collection(db, "equipos"), orderBy("numero_habitacion"));
   onSnapshot(q, (querySnapshot) => {
@@ -53,6 +75,8 @@ onMounted(() => {
       equiposTemp.push({ id: doc.id, ...doc.data() });
     });
     equipos.value = equiposTemp;
+    cargando.value = false;
+
   });
 });
 </script>
@@ -60,52 +84,64 @@ onMounted(() => {
 <template>
   <div>
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Panel de Mantenimiento</h1>
-      <p class="text-gray-500">Gestión de Aires Acondicionados</p>
+      <h1 class="text-2xl font-bold text-texto-principal">Panel de Mantenimiento</h1>
+      <p class="text-texto-secundario">Gestión de Aires Acondicionados</p>
     </div>
 
-    <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
-      <p class="font-semibold text-gray-700 mb-3">Buscar y Filtrar</p>
+    <div class="bg-card dark:bg-negro_card p-4 rounded-lg shadow-sm mb-6">
+      <p class="font-semibold text-texto-principal mb-3">Buscar y Filtrar</p>
       <input v-model="searchTerm" type="text" placeholder="Buscar por número de habitación o ubicación..."
-        class="w-full p-2 border rounded-md bg-gray-50 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
+        class="w-full p-2 border rounded-md bg-fondo border-borde focus:ring-2 focus:ring-interactivo focus-within:outline-none">
       <div class="flex flex-wrap gap-2 mt-3">
         <div class="flex flex-wrap gap-2 mt-3">
           <button @click="activeFilter = 'Todos'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Todos', 'bg-gray-200 text-gray-700': activeFilter !== 'Todos' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Todos', 'bg-fondo text-texto-principal': activeFilter !== 'Todos' }"
             class="px-3 py-1 text-sm rounded-full">
-            Todos ({{ equipos.length }})
+            Todos ({{ conteoFiltros['Todos'] }})
           </button>
           <button @click="activeFilter = 'Al Día'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Al Día', 'bg-gray-200 text-gray-700': activeFilter !== 'Al Día' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Al Día', 'bg-fondo text-texto-principal': activeFilter !== 'Al Día' }"
             class="px-3 py-1 text-sm rounded-full">
-            Al Día
+            Al Día ({{ conteoFiltros['Al Día'] }})
           </button>
           <button @click="activeFilter = 'Próximo'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Próximo', 'bg-gray-200 text-gray-700': activeFilter !== 'Próximo' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Próximo', 'bg-fondo text-texto-principal': activeFilter !== 'Próximo' }"
             class="px-3 py-1 text-sm rounded-full">
-            Próximas
+            Próximas ({{ conteoFiltros['Próximo'] }})
           </button>
           <button @click="activeFilter = 'Vencido'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Vencido', 'bg-gray-200 text-gray-700': activeFilter !== 'Vencido' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Vencido', 'bg-fondo text-texto-principal': activeFilter !== 'Vencido' }"
             class="px-3 py-1 text-sm rounded-full">
-            Vencidas
+            Vencidas ({{ conteoFiltros['Vencido'] }})
           </button>
           <button @click="activeFilter = 'Fuera de Servicio'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Fuera de Servicio', 'bg-gray-200 text-gray-700': activeFilter !== 'Fuera de Servicio' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Fuera de Servicio', 'bg-fondo text-texto-principal': activeFilter !== 'Fuera de Servicio' }"
             class="px-3 py-1 text-sm rounded-full">
-            Fuera de Servicio
+            Fuera de Servicio ({{ conteoFiltros['Fuera de Servicio'] }})
           </button>
         </div>
       </div>
     </div>
 
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold text-gray-800">Habitaciones ({{ equiposFiltrados.length }})</h2>
-      <span class="text-sm text-gray-500">Mostrando {{ equiposFiltrados.length }} de {{ equipos.length }}
+      <h2 class="text-xl font-bold text-texto-principal">Habitaciones ({{ equiposFiltrados.length }})</h2>
+      <span class="text-sm text-texto-secundario">Mostrando {{ equiposFiltrados.length }} de {{ equipos.length }}
         habitaciones</span>
     </div>
 
-    <div v-if="equiposFiltrados.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div v-if="cargando" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div v-for="n in 8" :key="n" class="bg-gray-50 rounded-lg shadow h-full p-4 space-y-3">
+        <SkeletonLoader height="2rem" width="60%" borderRadius="0.5rem" />
+        <SkeletonLoader height="1rem" width="40%" />
+        <SkeletonLoader height="1.25rem" width="50%" />
+        <div class="border-t mt-3 pt-3">
+          <SkeletonLoader height="1rem" width="100%" />
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="equiposFiltrados.length > 0"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <EquipoCard v-for="equipo in equiposFiltrados" :key="equipo.id" :equipo="equipo" />
     </div>
     <div v-else class="text-center text-gray-500 mt-8">

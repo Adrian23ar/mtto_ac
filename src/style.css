@@ -1,6 +1,29 @@
+/* src/style.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Paleta para Modo Claro (valores RGB) */
+    --color-fondo: 249 250 251;      /* #f9fafb */
+    --color-card: 255 255 255;      /* #FFFFFF */
+    --color-texto-principal: 17 24 39; /* #111827 */
+    --color-texto-secundario: 107 114 128; /* #6B7280 */
+    --color-interactivo: 19 151 178;  /* #1397b2 */
+    --color-borde: 229 231 235;      /* #E5E7EB */
+  }
+
+  .dark {
+    /* Misma paleta, pero para Modo Oscuro (valores RGB) */
+    --color-fondo: 17 24 39;         /* Tu color 'negro' pero más suave */
+    --color-card: 31 41 55;          /* #1f2937 - Un gris azulado oscuro */
+    --color-texto-principal: 249 250 251;  /* #F9FAFB */
+    --color-texto-secundario: 156 163 175;  /* #9CA3AF */
+    /* --color-interactivo: 16 104 122;     */
+    --color-borde: 55 65 81;         /* #374151 */
+  }
+}
 
 html{
     font-family: 'Inter', sans-serif;

@@ -31,8 +31,8 @@ const estado = computed(() => {
   if (props.equipo.fuera_de_servicio) {
     return {
       texto: 'Fuera de Servicio',
-      claseHeader: 'bg-status-gris text-white',
-      clasePill: 'bg-gray-200 text-gray-800',
+      claseHeader: 'bg-status-gris text-texto-principal',
+      clasePill: 'bg-status-gris text-texto-principal',
       IconoHeader: ExclamationTriangleIcon,
       proximo: null
     };
@@ -44,7 +44,7 @@ const estado = computed(() => {
     return {
       texto: 'Sin Registro',
       claseHeader: 'bg-status-amarillo text-white',
-      clasePill: 'bg-yellow-100 text-yellow-800',
+      clasePill: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100',
       IconoHeader: CalendarDaysIcon,
       proximo: proximoCalculado
     };
@@ -62,7 +62,7 @@ const estado = computed(() => {
     return {
       texto: 'Vencido',
       claseHeader: 'bg-status-rojo text-white',
-      clasePill: 'bg-red-100 text-red-800',
+      clasePill: 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100',
       IconoHeader: ExclamationTriangleIcon,
       proximo: fechaProximo
     };
@@ -71,7 +71,7 @@ const estado = computed(() => {
     return {
       texto: 'Próximo',
       claseHeader: 'bg-status-amarillo text-white',
-      clasePill: 'bg-yellow-100 text-yellow-800',
+      clasePill: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100',
       IconoHeader: CalendarDaysIcon,
       proximo: fechaProximo
     };
@@ -79,7 +79,7 @@ const estado = computed(() => {
   return {
     texto: 'Al Día',
     claseHeader: 'bg-status-verde text-white',
-    clasePill: 'bg-green-100 text-green-800',
+    clasePill: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
     IconoHeader: CalendarDaysIcon,
     proximo: fechaProximo
   };
@@ -88,7 +88,7 @@ const estado = computed(() => {
 
 <template>
   <router-link :to="{ name: 'detalle-equipo', params: { id: equipo.id } }" class="block h-full">
-    <div class="bg-gray-50 rounded-lg shadow h-full flex flex-col hover:shadow-lg hover:scale-[101%] transition-all">
+    <div class="bg-card rounded-lg shadow h-full flex flex-col hover:shadow-lg hover:scale-[101%] transition-all">
 
       <div :class="estado.claseHeader" class="flex justify-between items-center p-3 rounded-t-lg">
         <div class="flex items-center gap-2">
@@ -106,15 +106,15 @@ const estado = computed(() => {
           <WrenchScrewdriverIcon class="h-5 w-5 text-gray-400" />
         </div>
 
-        <div class="mt-2 text-sm text-gray-600 flex items-center gap-2">
+        <div class="mt-2 text-sm text-texto-secundario flex items-center gap-2">
           <MapPinIcon class="h-4 w-4" />
           <span>{{ equipo.ubicacion_condensadora || 'Sin ubicación' }}</span>
         </div>
 
-        <p class="text-lg font-bold text-gray-800 mt-1">{{ equipo.capacidad_btu }}</p>
+        <p class="text-lg font-bold text-texto-principal mt-1">{{ equipo.capacidad_btu }}</p>
 
         <div class="flex-grow"></div>
-        <div class="border-t mt-3 pt-3 flex justify-between text-xs text-gray-500">
+        <div class="border-t mt-3 pt-3 flex justify-between text-xs text-texto-secundario">
           <div>
             <p>Último:</p>
             <p class="font-semibold">{{ formatDate(equipo.ultimo_mantenimiento) }}</p>

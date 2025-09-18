@@ -4,7 +4,7 @@
 
 <template>
 
-  <div class="min-h-screen bg-brand-blanco">
+  <div class="min-h-screen bg-fondo">
 
     <RouterView />
   </div>
