@@ -1,33 +1,50 @@
 <script setup>
-// src/views/login.vue
-
-// Paso 1: Corrige tus importaciones
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 import { auth } from '../firebase/config.js';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const usuario = ref('');
 const password = ref('');
-
-// Paso 2: Instancia el router para poder usarlo
 const router = useRouter();
+const toast = useToast();
+const isLoading = ref(false); // Para deshabilitar el botón mientras se procesa
 
-// Paso 3: Reestructura tu función handleLogin así
 const handleLogin = async () => {
+    // 1. Validación de campos vacíos
+    if (!usuario.value.trim() || !password.value) {
+        return toast.error('Por favor, ingresa tu usuario y contraseña.');
+    }
+
+    isLoading.value = true;
     try {
-        // 3.1 Transforma el usuario a un email ficticio
-        const fakeEmail = `${usuario.value}@hotelchacaosuites.com`;
-        // 3.2 Llama a la función de Firebase con la sintaxis correcta
+        const fakeEmail = `${usuario.value.trim()}@hotelchacaosuites.com`;
+
+        // 2. Autenticación con Firebase Auth
         const userCredential = await signInWithEmailAndPassword(auth, fakeEmail, password.value);
+        const user = userCredential.user;
 
-        // 3.4 Redirige al usuario al dashboard
-        router.push('/dashboard'); // Asegúrate de tener esta ruta en tu router
+        // 3. Autorización: Verificación del estado en Firestore
+        const db = getFirestore();
+        const userDocRef = doc(db, 'usuarios', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
 
+        // Si el usuario existe en nuestra colección y está inactivo...
+        if (userDocSnap.exists() && userDocSnap.data().estado === 'inactivo') {
+            await signOut(auth); // ...cerramos su sesión inmediatamente...
+            toast.error("Usuario o contraseña incorrectos."); // ...y mostramos el error genérico.
+        } else {
+            // Si está activo (o no tiene perfil aún, lo cual permitimos), lo dejamos pasar.
+            router.push('/dashboard');
+        }
     } catch (error) {
-        // 3.5 Si algo sale mal (contraseña incorrecta, etc.), el código salta aquí
+        // Para cualquier otro error de autenticación (contraseña mala, usuario no existe)...
         console.error("Error durante el inicio de sesión:", error.code);
-        alert("Usuario o contraseña incorrectos. Por favor, intenta de nuevo.");
+        toast.error("Usuario o contraseña incorrectos."); // ...mostramos el mismo error genérico.
+    } finally {
+        isLoading.value = false; // Reactivamos el botón
     }
 };
 </script>
@@ -59,9 +76,9 @@ const handleLogin = async () => {
                         <input type="password" v-model="password" id="password" required
                             class="w-full p-[6px] border rounded-md bg-gray-50 border-gray-200 focus:ring-2 focus:ring-interactivo focus-within:outline-none">
                     </div>
-                    <button type="submit"
-                        class="w-full bg-interactivo hover:bg-interactivo/90 text-sm text-white font-semibold py-3 rounded-lg">
-                        Iniciar Sesión
+                    <button type="submit" :disabled="isLoading"
+                        class="w-full bg-interactivo hover:bg-opacity-90 text-sm text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        {{ isLoading ? 'Verificando...' : 'Iniciar Sesión' }}
                     </button>
                 </form>
                 <p class="text-sm text-gray-500 mt-8 text-center">¿Problemas para acceder? <span
