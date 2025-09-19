@@ -11,7 +11,8 @@ const props = defineProps({
     show: { type: Boolean, default: false },
     equipoId: { type: String, required: true },
     tareasDefinidas: { type: Object, required: true },
-    mantenimientoExistente: { type: Object, default: null } // 1. Acepta el nuevo prop
+    mantenimientoExistente: { type: Object, default: null },
+    programacionIdParaCompletar: { type: String, default: null }
 
 });
 
@@ -37,22 +38,32 @@ watch(() => props.show, (newValue) => {
 });
 
 watchEffect(() => {
-    if (props.show && props.mantenimientoExistente) {
-        // Si estamos en modo edición, llenamos el formulario con los datos existentes
-        observaciones.value = props.mantenimientoExistente.observaciones_servicio;
-        duracion.value = props.mantenimientoExistente.duracion_minutos;
+  if (props.show && props.mantenimientoExistente) {
+    // Llenamos los campos que siempre existen o tienen un valor por defecto
+    observaciones.value = props.mantenimientoExistente.observaciones_servicio || '';
+    duracion.value = props.mantenimientoExistente.duracion_minutos || 30;
 
-        const completadas = {};
-        // Marcamos los checkboxes de las tareas que ya se habían realizado
-        const todasLasTareas = [...props.tareasDefinidas.preventivas, ...props.tareasDefinidas.correctivas];
-        todasLasTareas.forEach(tareaDefinida => {
-            if (props.mantenimientoExistente.tareas_realizadas.preventivas.includes(tareaDefinida.label) ||
-                props.mantenimientoExistente.tareas_realizadas.correctivas.includes(tareaDefinida.label)) {
-                completadas[tareaDefinida.key] = true;
-            }
-        });
-        tareasCompletadas.value = completadas;
+    // SOLO intentamos llenar los checkboxes si el objeto 'tareas_realizadas' existe
+    if (props.mantenimientoExistente.tareas_realizadas) {
+      const completadas = {};
+      const todasLasTareas = [...props.tareasDefinidas.preventivas, ...props.tareasDefinidas.correctivas];
+
+      todasLasTareas.forEach(tareaDefinida => {
+        const preventivasExistentes = props.mantenimientoExistente.tareas_realizadas.preventivas || [];
+        const correctivasExistentes = props.mantenimientoExistente.tareas_realizadas.correctivas || [];
+
+        if (preventivasExistentes.includes(tareaDefinida.label) || correctivasExistentes.includes(tareaDefinida.label)) {
+          completadas[tareaDefinida.key] = true;
+        }
+      });
+      tareasCompletadas.value = completadas;
     }
+  } else if (props.show) {
+    // Si es un mantenimiento nuevo (no edición), reseteamos todo
+    observaciones.value = '';
+    duracion.value = 30;
+    tareasCompletadas.value = {};
+  }
 });
 
 const handleSubmit = async () => {
@@ -61,9 +72,8 @@ const handleSubmit = async () => {
 
     if (totalTareasSeleccionadas === 0 && !observacionEscrita) {
         toast.error('Debes seleccionar al menos una tarea o escribir una observación.');
-        return; // Detiene la ejecución de la función aquí
+        return;
     }
-    // --- FIN DEL BLOQUE DE VALIDACIÓN ---
 
     if (isSaving.value) return;
     isSaving.value = true;
@@ -72,9 +82,6 @@ const handleSubmit = async () => {
         const db = getFirestore();
         const user = auth.currentUser;
         const batch = writeBatch(db);
-
-        const mantenimientoRef = doc(collection(db, 'mantenimientos'));
-
         // Construimos el nuevo objeto de tareas realizadas
         const tareasRealizadas = {
             preventivas: props.tareasDefinidas.preventivas
@@ -91,37 +98,33 @@ const handleSubmit = async () => {
             tipoPrincipal = 'Correctivo';
         }
 
-        if (props.mantenimientoExistente) {
-            // MODO EDICIÓN: Actualizamos el documento existente
+        if (props.mantenimientoExistente && props.mantenimientoExistente.id) {
+            // CASO 1: Estamos EDITANDO un mantenimiento del HISTORIAL
             const mantenimientoRef = doc(db, 'mantenimientos', props.mantenimientoExistente.id);
-            // Solo actualizamos los campos que se pueden cambiar, no sobreescribimos todo
             batch.update(mantenimientoRef, {
                 duracion_minutos: duracion.value,
                 observaciones_servicio: observaciones.value,
                 tareas_realizadas: tareasRealizadas,
                 tipo: tipoPrincipal
             });
-            // No necesitamos actualizar el equipo aquí, solo el registro de mantenimiento
-            await batch.commit();
             toast.success('¡Mantenimiento actualizado con éxito!');
+
         } else {
-            batch.set(mantenimientoRef, {
+            // CASO 2: Estamos CREANDO un nuevo mantenimiento (ya sea desde cero o completando uno programado)
+            const nuevoMantenimientoRef = doc(collection(db, 'mantenimientos'));
+            batch.set(nuevoMantenimientoRef, {
                 equipoId: props.equipoId,
-                tipo: tipoPrincipal, // Guardamos un tipo principal para el resumen
+                tipo: tipoPrincipal,
                 duracion_minutos: duracion.value,
                 observaciones_servicio: observaciones.value,
-                tareas_realizadas: tareasRealizadas, // Guardamos el objeto completo
+                tareas_realizadas: tareasRealizadas,
                 fecha_realizado: serverTimestamp(),
                 tecnico_uid: user.uid,
                 tecnico_email: user.email,
-                tecnico_nombre: userProfile.value?.nombre_completo || user.email // <-- AÑADE ESTA LÍNEA
-
+                tecnico_nombre: userProfile.value?.nombre_completo || user.email
             });
-
             const equipoRef = doc(db, 'equipos', props.equipoId);
-            const datosActualizacionEquipo = {
-                ultimo_mantenimiento: serverTimestamp(),
-            };
+            const datosActualizacionEquipo = { ultimo_mantenimiento: serverTimestamp() };
 
             // Aquí actualizaremos solo las tareas que definimos como "críticas"
             const tareasCriticasKeys = ['cambio_baterias_termostato', 'cambio_rodamientos_condensador', 'cambio_rodamientos_motor_evaporador', 'lavado_unidad_evaporadora', 'lavado_unidad_condensadora', 'cambio_capacitor'];
@@ -133,11 +136,16 @@ const handleSubmit = async () => {
 
             batch.update(equipoRef, datosActualizacionEquipo);
 
-            await batch.commit();
+            if (props.programacionIdParaCompletar) {
+                const programadoRef = doc(db, 'mantenimientos_programados', props.programacionIdParaCompletar);
+                batch.update(programadoRef, { estado: 'Completado' });
+            }
+
             toast.success('¡Mantenimiento registrado con éxito!');
         }
-
-
+        
+        
+        await batch.commit();
         emit('close');
 
     } catch (error) {
@@ -184,7 +192,7 @@ const handleSubmit = async () => {
                                             class="min-h-5 min-w-5 h-5 w-5 md:min-h-4 md:min-w-4 md:h-4 md:w-4 rounded border-borde text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-texto-principal">{{
                                             tarea.label
-                                            }}</label>
+                                        }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -211,7 +219,7 @@ const handleSubmit = async () => {
                                             class="h-4 w-4 rounded border-borde text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-texto-principal">{{
                                             tarea.label
-                                            }}</label>
+                                        }}</label>
                                     </div>
                                 </div>
                             </Transition>

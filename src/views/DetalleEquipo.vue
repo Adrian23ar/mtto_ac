@@ -7,7 +7,7 @@ import { getFirestore, doc, updateDoc, collection, query, where, orderBy, onSnap
 import RegistrarMttoModal from '../components/RegistrarMttoModal.vue';
 import HistorialCard from '../components/HistorialCard.vue';
 import ConfirmacionModal from '../components/ConfirmacionModal.vue';
-import SkeletonLoader from '../components/SkeletonLoader.vue'; // <-- Importa el skeleton
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 import ProgramarMttoModal from '../components/ProgramarMttoModal.vue';
 import ProgramacionCard from '../components/ProgramacionCard.vue';
 
@@ -27,6 +27,7 @@ const mantenimientosProgramados = ref([]);
 const historialMantenimientos = ref([]);
 const mantenimientoAEditar = ref(null);
 const programacionAEditar = ref(null);
+const programacionACompletarId = ref(null);
 
 const confirmacionState = ref({
     show: false,
@@ -72,12 +73,12 @@ onMounted(() => {
         historialMantenimientos.value = historicoTemp;
     });
 
-    const programadosQuery = query(
-        collection(db, "mantenimientos_programados"),
-        where("equipoId", "==", equipoId),      // Para este equipo
-        where("estado", "==", "Programado"),    // Que aún no se hayan completado
-        orderBy("fecha_programada", "asc") // El más cercano primero
-    );
+const programadosQuery = query(
+  collection(db, "mantenimientos_programados"),
+  where("equipoId", "==", equipoId),
+  where("estado", "in", ["Programado", "Cancelado"]),
+  orderBy("fecha_programada", "desc")
+);
 
     onSnapshot(programadosQuery, (querySnapshot) => {
         const programadosTemp = [];
@@ -139,21 +140,38 @@ const toggleFueraDeServicio = () => {
     );
 };
 
-const iniciarBorrado = (item, coleccion) => {
-    abrirConfirmacion(
-        'Confirmar Eliminación',
-        '¿Estás seguro de que quieres eliminar este registro? Esta acción no se puede deshacer.',
-        async () => { // La lógica de borrado va aquí
-            try {
-                const docRef = doc(db, coleccion, item.id);
-                await deleteDoc(docRef);
-                toast.success('Registro eliminado con éxito.');
-            } catch (error) {
-                console.error("Error al eliminar:", error);
-                toast.error("Hubo un error al eliminar el registro.");
-            }
-        }
-    );
+const iniciarCancelacion = (item) => {
+  abrirConfirmacion(
+    'Confirmar Cancelación',
+    '¿Estás seguro de que quieres cancelar esta programación?',
+    async () => {
+      try {
+        const docRef = doc(db, 'mantenimientos_programados', item.id);
+        await updateDoc(docRef, { estado: 'Cancelado' }); // <-- Cambiamos a updateDoc
+        toast.success('Programación cancelada.');
+      } catch (error) {
+        toast.error("Hubo un error al cancelar.");
+      }
+    }
+  );
+};
+
+// Esta función es para eliminar un registro del HISTORIAL de mantenimientos
+const iniciarBorradoHistorial = (item) => {
+  abrirConfirmacion(
+    'Confirmar Eliminación',
+    '¿Estás seguro de que quieres eliminar este registro de mantenimiento del historial? Esta acción no se puede deshacer.',
+    async () => { // La lógica de borrado va aquí
+      try {
+        const docRef = doc(db, 'mantenimientos', item.id);
+        await deleteDoc(docRef);
+        toast.success('Registro de historial eliminado con éxito.');
+      } catch (error) {
+        console.error("Error al eliminar el historial:", error);
+        toast.error("Hubo un error al eliminar el registro.");
+      }
+    }
+  );
 };
 
 const startEditing = (section) => {
@@ -197,10 +215,32 @@ const iniciarEdicion = (mantenimiento) => {
     showModal.value = true; // Abre el modal de registro
 };
 
+const iniciarCompletado = (programacion) => {
+    // --- NUEVA VALIDACIÓN DE FECHA ---
+    const fechaProgramada = programacion.fecha_programada.toDate();
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    if (fechaProgramada > hoy) {
+        toast.info('No se puede completar un mantenimiento programado para una fecha futura.');
+        return; // Detenemos la ejecución
+    }
+    // --- FIN DE LA VALIDACIÓN ---
+
+    // El resto de la función se mantiene igual
+    const prellenado = {
+        observaciones_servicio: programacion.notas,
+    };
+    mantenimientoAEditar.value = prellenado;
+    programacionACompletarId.value = programacion.id;
+    showModal.value = true;
+};
+
 // 3. Modifica el @close del modal de registro para limpiar la variable de edición
 const cerrarModalRegistro = () => {
     showModal.value = false;
-    mantenimientoAEditar.value = null; // Limpia al cerrar
+    mantenimientoAEditar.value = null;
+    programacionACompletarId.value = null; // Limpiamos el ID al cerrar
 };
 
 const tareasDefinidas = ref({
@@ -232,6 +272,7 @@ const tareasDefinidas = ref({
         { key: 'reemplazo_motor_condensador', label: 'Reemplazo de motor del condensador' },
         { key: 'reemplazo_rodamientos_evaporador', label: 'Reemplazo de rodamientos de motor evaporador' },
         { key: 'reemplazo_rodamientos_condensador', label: 'Reemplazo de rodamientos de motor condensador' },
+        { key: 'reemplazo_compresor', label: 'Reemplazo de Compresor' },
     ]
 });
 
@@ -354,7 +395,7 @@ const estadoGeneral = computed(() => {
                         <div class="text-sm space-y-2 text-texto-secundario">
                             <p><span class="font-semibold text-texto-principal">Ubicación:</span> {{
                                 equipo.ubicacion_condensadora
-                                }}
+                            }}
                             </p>
                             <p><span class="font-semibold text-texto-principal">Capacidad:</span> {{
                                 equipo.capacidad_btu }}
@@ -466,7 +507,7 @@ const estadoGeneral = computed(() => {
                             <div>
                                 <p class="text-texto-secundario">Último Mantenimiento</p>
                                 <p class="font-semibold text-texto-principal">{{ formatDate(equipo.ultimo_mantenimiento)
-                                }}</p>
+                                    }}</p>
                             </div>
                             <div>
                                 <p class="text-texto-secundario">Próximo Mantenimiento</p>
@@ -510,8 +551,8 @@ const estadoGeneral = computed(() => {
 
                     <div v-if="mantenimientosProgramados.length > 0" class="space-y-3">
                         <ProgramacionCard v-for="prog in mantenimientosProgramados" :key="prog.id" :programacion="prog"
-                            @borrar="iniciarBorrado(prog, 'mantenimientos_programados')"
-                            @editar="iniciarEdicionProgramacion(prog)" />
+                            @cancelar="iniciarCancelacion(prog, 'mantenimientos_programados')"
+                            @editar="iniciarEdicionProgramacion(prog)" @completar="iniciarCompletado(prog)" />
                     </div>
 
                     <div v-else class="text-center text-texto-secundario text-sm py-4">
@@ -529,7 +570,7 @@ const estadoGeneral = computed(() => {
 
                     <div v-else class="space-y-4">
                         <HistorialCard v-for="mtto in historialMantenimientos" :key="mtto.id" :mantenimiento="mtto"
-                            @borrar="iniciarBorrado(mtto, 'mantenimientos')" @editar="iniciarEdicion(mtto)" />
+                            @borrar="iniciarBorradoHistorial(mtto)" @editar="iniciarEdicion(mtto)" />
                     </div>
                 </div>
 

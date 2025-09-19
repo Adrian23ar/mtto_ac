@@ -1,5 +1,6 @@
 <script setup>
-import { CalendarDaysIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
+// src/components/ProgramacionCard.vue
+import { CalendarDaysIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 import { computed } from 'vue';
 import { useAuth } from '../composables/useAuth';
 
@@ -9,7 +10,7 @@ const props = defineProps({
     programacion: { type: Object, required: true }
 });
 
-const emit = defineEmits(['borrar', 'editar']); // <-- AÑADE 'editar'
+const emit = defineEmits(['cancelar', 'editar', 'completar']); // <-- Añadimos 'completar'
 
 const formatDate = (timestamp) => {
     if (!timestamp) return 'Fecha no disponible';
@@ -35,18 +36,27 @@ const puedeModificar = computed(() => {
                     <p class="text-xs text-texto-secundario">Programado por: {{ programacion.creado_por_nombre }}</p>
                 </div>
             </div>
-            <span
-                class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100">
-                Programado
-            </span>
-            <div v-if="puedeModificar" class="flex items-center gap-2">
-            <button @click.prevent="emit('editar')" class="text-texto-secundario hover:text-interactivo" title="Editar">
-                <PencilIcon class="h-4 w-4" />
-            </button>
-            <button @click.prevent="emit('borrar')" class="text-texto-secundario hover:text-status-rojo" title="Eliminar">
-                <TrashIcon class="h-4 w-4" />
-            </button>
-        </div>
+            <div class="flex items-center gap-4">
+                <span v-if="programacion.estado === 'Programado'"
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-800">Programado</span>
+                <span v-if="programacion.estado === 'Cancelado'"
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800">Cancelado</span>
+
+                <div v-if="puedeModificar && programacion.estado === 'Programado'" class="flex items-center gap-3">
+                    <button @click.prevent="emit('completar')" class="text-texto-secundario hover:text-status-verde"
+                        title="Marcar como Completado">
+                        <CheckCircleIcon class="h-6 w-6" />
+                    </button>
+                    <button @click.prevent="emit('editar')" class="text-texto-secundario hover:text-interactivo"
+                        title="Editar">
+                        <PencilIcon class="h-5 w-5" />
+                    </button>
+                    <button @click.prevent="emit('cancelar')" class="text-texto-secundario hover:text-status-rojo"
+                        title="Cancelar Programación">
+                        <TrashIcon class="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
         </div>
         <p v-if="programacion.notas" class="text-sm text-texto-secundario mt-2 border-t border-borde pt-2">
             {{ programacion.notas }}
