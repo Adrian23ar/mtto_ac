@@ -358,8 +358,7 @@ const estadoGeneral = computed(() => {
                         <ArrowLeftIcon class="h-6 w-6" />
                     </button>
                     <div>
-                        <h1 class="text-2xl font-bold text-texto-principal">Habitación {{ equipo.numero_habitacion }}
-                        </h1>
+                        <h1 class="text-2xl font-bold text-texto-principal">{{ equipo.nombre_display }}</h1>
                         <p class="text-sm text-texto-secundario">{{ estadoGeneral.texto }}</p>
                     </div>
                 </div>

@@ -10,7 +10,7 @@ import {
 
 const props = defineProps({
   equipo: { type: Object, required: true },
-  programado: { type: Object, default: null } // <-- 1. Acepta el nuevo prop
+  programado: { type: Object, default: null }
 });
 
 const formatDate = (dateInput) => {
@@ -27,15 +27,14 @@ const formatDate = (dateInput) => {
   return `${day}/${month}/${year}`;
 };
 
-// Propiedad computada mejorada que devuelve un objeto con todos los estilos
 const estado = computed(() => {
   if (props.programado) {
     return {
       texto: 'Programado',
-      claseHeader: 'bg-purple-600 text-white', // Un color distintivo para programados
+      claseHeader: 'bg-purple-600 text-white',
       clasePill: 'bg-purple-100 text-purple-800',
       IconoHeader: CalendarDaysIcon,
-      proximo: props.programado.fecha_programada.toDate() // <-- Usa la fecha programada
+      proximo: props.programado.fecha_programada.toDate()
     };
   }
   if (props.equipo.fuera_de_servicio) {
@@ -49,7 +48,7 @@ const estado = computed(() => {
   }
 
   if (!props.equipo.ultimo_mantenimiento) {
-    const proximoCalculado = new Date(); // Asumimos hoy si no hay registro
+    const proximoCalculado = new Date();
     proximoCalculado.setDate(proximoCalculado.getDate() + (props.equipo.intervalo_mantenimiento_dias || 90));
     return {
       texto: 'Sin Registro',
@@ -99,12 +98,12 @@ const estado = computed(() => {
 <template>
   <router-link :to="{ name: 'detalle-equipo', params: { id: equipo.id } }" class="block h-full">
     <div class="bg-card rounded-lg shadow h-full flex flex-col hover:shadow-lg hover:scale-[101%] transition-all">
-<div v-if="programado" class="absolute top-14 right-4 text-purple-600">
-  </div>
+      <div v-if="programado" class="absolute top-14 right-4 text-purple-600">
+      </div>
       <div :class="estado.claseHeader" class="flex justify-between items-center p-3 rounded-t-lg">
         <div class="flex items-center gap-2">
           <component :is="estado.IconoHeader" class="h-5 w-5" />
-          <h3 class="font-bold">Habitación {{ equipo.numero_habitacion }}</h3>
+          <h3 class="font-bold">{{ equipo.nombre_display }}</h3>
         </div>
         <NoSymbolIcon v-if="equipo.fuera_de_servicio" class="h-6 w-6" />
       </div>

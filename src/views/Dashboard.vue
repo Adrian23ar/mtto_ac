@@ -1,21 +1,19 @@
 <script setup>
-// src/views/Dashboard.vue
 import { ref, onMounted, computed } from 'vue';
 import { getFirestore, collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import EquipoCard from '../components/EquipoCard.vue';
-import SkeletonLoader from '../components/SkeletonLoader.vue'; // <-- 1. Importa el nuevo componente
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 
 const db = getFirestore();
 const equipos = ref([]);
-const mantenimientosProgramados = ref([]); // <-- 1. Añade una ref para las programaciones
+const mantenimientosProgramados = ref([]);
 const searchTerm = ref('');
 const activeFilter = ref('Todos');
-const cargando = ref(true); // <-- 2. Añade el estado de carga
+const cargando = ref(true);
 
-// Función auxiliar para obtener el estado de un equipo (similar a la de EquipoCard)
 const getEquipoStatus = (equipo) => {
   if (equipo.fuera_de_servicio) return 'Fuera de Servicio';
-  if (!equipo.ultimo_mantenimiento) return 'Próximo'; // O el estado que prefieras para los nuevos
+  if (!equipo.ultimo_mantenimiento) return 'Próximo';
 
   const fechaUltimo = equipo.ultimo_mantenimiento.toDate();
   const fechaActual = new Date();
@@ -30,18 +28,17 @@ const getEquipoStatus = (equipo) => {
 const equiposFiltrados = computed(() => {
   let equiposTemp = equipos.value;
 
-  // 1. Filtramos por estado (si no es 'Todos')
   if (activeFilter.value !== 'Todos') {
     equiposTemp = equiposTemp.filter(equipo => getEquipoStatus(equipo) === activeFilter.value);
   }
 
-  // 2. Filtramos por búsqueda sobre el resultado anterior
   if (searchTerm.value) {
     const busquedaMinuscula = searchTerm.value.toLowerCase();
     equiposTemp = equiposTemp.filter(equipo => {
-      const habitacion = equipo.numero_habitacion.toLowerCase();
+      // CAMBIO IMPORTANTE: Buscamos en 'nombre_display'
+      const nombre = equipo.nombre_display.toLowerCase();
       const ubicacion = (equipo.ubicacion_condensadora || '').toLowerCase();
-      return habitacion.includes(busquedaMinuscula) || ubicacion.includes(busquedaMinuscula);
+      return nombre.includes(busquedaMinuscula) || ubicacion.includes(busquedaMinuscula);
     });
   }
 
@@ -49,7 +46,6 @@ const equiposFiltrados = computed(() => {
 });
 
 const conteoFiltros = computed(() => {
-  // Inicializamos un objeto contador
   const conteos = {
     'Todos': equipos.value.length,
     'Al Día': 0,
@@ -58,7 +54,6 @@ const conteoFiltros = computed(() => {
     'Fuera de Servicio': 0
   };
 
-  // Iteramos sobre cada equipo UNA SOLA VEZ para contarlos
   for (const equipo of equipos.value) {
     const estado = getEquipoStatus(equipo);
     if (conteos[estado] !== undefined) {
@@ -71,8 +66,9 @@ const conteoFiltros = computed(() => {
 onMounted(() => {
   const q = query(
     collection(db, "equipos"),
-    where("estado", "==", "activo"), // <-- AÑADE ESTA LÍNEA
-    orderBy("numero_habitacion")
+    where("estado", "==", "activo"),
+    // CAMBIO IMPORTANTE: Ordenamos por 'nombre_display'
+    orderBy("nombre_display")
   );
   onSnapshot(q, (querySnapshot) => {
     const equiposTemp = [];
@@ -81,8 +77,8 @@ onMounted(() => {
     });
     equipos.value = equiposTemp;
     cargando.value = false;
-
   });
+
   const qProgramados = query(collection(db, "mantenimientos_programados"), where("estado", "==", "Programado"));
   onSnapshot(qProgramados, (snapshot) => {
     const programadosTemp = [];
@@ -103,7 +99,7 @@ onMounted(() => {
 
     <div class="bg-card dark:bg-negro_card p-4 rounded-lg shadow-sm mb-6">
       <p class="font-semibold text-texto-principal mb-3">Buscar y Filtrar</p>
-      <input v-model="searchTerm" type="text" placeholder="Buscar por número de habitación o ubicación..."
+      <input v-model="searchTerm" type="text" placeholder="Buscar por habitación, área o ubicación..."
         class="w-full p-2 border rounded-md bg-fondo border-borde focus:ring-2 focus:ring-interactivo focus-within:outline-none">
       <div class="flex flex-wrap gap-2 mt-3">
         <div class="flex flex-wrap gap-2 mt-3">
@@ -137,9 +133,9 @@ onMounted(() => {
     </div>
 
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold text-texto-principal">Habitaciones ({{ equiposFiltrados.length }})</h2>
+      <h2 class="text-xl font-bold text-texto-principal">Equipos ({{ equiposFiltrados.length }})</h2>
       <span class="text-sm text-texto-secundario">Mostrando {{ equiposFiltrados.length }} de {{ equipos.length }}
-        habitaciones</span>
+        equipos</span>
     </div>
 
     <div v-if="cargando" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -159,7 +155,7 @@ onMounted(() => {
         :programado="mantenimientosProgramados.find(p => p.equipoId === equipo.id)" />
     </div>
     <div v-else class="text-center text-gray-500 mt-8">
-      <p>Cargando equipos...</p>
+      <p>No se encontraron equipos.</p>
     </div>
   </div>
 </template>

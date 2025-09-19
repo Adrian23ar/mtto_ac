@@ -1,11 +1,12 @@
 <script setup>
-import { ref, watchEffect } from 'vue';
+import { ref, watchEffect, computed } from 'vue';
 import { useToast } from 'vue-toastification';
-import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+// ¡Importante! Añadimos addDoc y collection
+import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
-    equipo: { type: Object, default: null } // Si pasamos un equipo, estamos en modo edición
+    equipo: { type: Object, default: null }
 });
 const emit = defineEmits(['close', 'guardado']);
 
@@ -17,53 +18,59 @@ const isSaving = ref(false);
 const opcionesCapacidad = ['12,000 BTU', '18,000 BTU', '24,000 BTU', '36,000 BTU', '48,000 BTU', '5 Toneladas', '7.5 Toneladas', '10 Toneladas'];
 const opcionesCompresor = ['Bueno', 'Regular', 'Deficiente'];
 
-// Este 'watchEffect' se ejecuta cada vez que el modal se abre.
-// Pre-llena el formulario si estamos editando, o lo resetea si estamos creando.
+// Un 'computed' para cambiar la etiqueta del campo dinámicamente
+const labelIdentificador = computed(() => {
+    return formData.value.tipo === 'habitacion' ? 'Número de Habitación' : 'Nombre del Área';
+});
+
 watchEffect(() => {
     if (props.show) {
         if (props.equipo) {
             // MODO EDICIÓN: Copiamos los datos del equipo existente
             formData.value = { ...props.equipo };
         } else {
-            // MODO CREACIÓN: Establecemos valores por defecto
+            // MODO CREACIÓN: Establecemos valores por defecto con la nueva estructura
             formData.value = {
-                numero_habitacion: '',
+                tipo: 'habitacion', // Por defecto será 'habitación'
+                identificador: '',
+                nombre_display: '',
                 ubicacion_condensadora: '',
                 capacidad_btu: '12,000 BTU',
                 estado_compresor: 'Bueno',
                 intervalo_mantenimiento_dias: 90,
                 observaciones_permanentes: '',
-                estado: 'activo' // Todos los equipos nuevos se crean como 'activos'
+                estado: 'activo'
             };
         }
     }
 });
 
 const handleSubmit = async () => {
-    const numHabitacion = formData.value.numero_habitacion?.trim();
-    if (!numHabitacion) {
-        return toast.error('El número de habitación es obligatorio.');
+    const identificador = formData.value.identificador?.trim();
+    if (!identificador) {
+        return toast.error(`El campo "${labelIdentificador.value}" es obligatorio.`);
     }
 
     isSaving.value = true;
     try {
-        const docRef = doc(db, 'equipos', numHabitacion);
+        // Generamos el nombre para mostrar
+        if (formData.value.tipo === 'habitacion') {
+            formData.value.nombre_display = `Habitación ${identificador}`;
+        } else {
+            formData.value.nombre_display = identificador;
+        }
 
         if (props.equipo) {
-            // MODO EDICIÓN: Simplemente actualizamos el documento
+            // MODO EDICIÓN: Actualizamos el documento existente usando su ID automático
+            const docRef = doc(db, 'equipos', props.equipo.id);
             await updateDoc(docRef, formData.value);
-            toast.success(`Habitación ${numHabitacion} actualizada con éxito.`);
+            toast.success(`Equipo "${formData.value.nombre_display}" actualizado con éxito.`);
         } else {
-            // MODO CREACIÓN: Primero verificamos si el documento ya existe
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                toast.error(`La habitación ${numHabitacion} ya existe. No se puede duplicar.`);
-                return; // Detenemos la ejecución
-            }
-            // Si no existe, creamos el nuevo documento
-            await setDoc(docRef, formData.value);
-            toast.success(`Habitación ${numHabitacion} creada con éxito.`);
+            // MODO CREACIÓN: Usamos addDoc para crear un nuevo documento con ID automático
+            await addDoc(collection(db, 'equipos'), formData.value);
+            toast.success(`Equipo "${formData.value.nombre_display}" creado con éxito.`);
         }
+
         emit('guardado');
         emit('close');
     } catch (error) {
@@ -84,12 +91,23 @@ const handleSubmit = async () => {
                         <h2 class="text-xl font-bold text-texto-principal">{{ equipo ? 'Editar Equipo' : 'Crear Nuevo Equipo' }}</h2>
                     </div>
                     <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+
                         <div>
-                            <label class="block text-sm font-semibold text-texto-principal mb-1">Número de
-                                Habitación</label>
-                            <input v-model="formData.numero_habitacion" type="text" required :disabled="!!equipo"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario disabled:bg-gray-200 dark:disabled:bg-gray-700">
+                            <label class="block text-sm font-semibold text-texto-principal mb-1">Tipo de Área</label>
+                            <select v-model="formData.tipo" :disabled="!!equipo"
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700">
+                                <option value="habitacion">Habitación</option>
+                                <option value="area_comun">Área Común</option>
+                            </select>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-texto-principal mb-1">{{ labelIdentificador
+                                }}</label>
+                            <input v-model="formData.identificador" type="text" required :disabled="!!equipo"
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700">
+                        </div>
+
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Ubicación
                                 Condensadora</label>
@@ -111,7 +129,7 @@ const handleSubmit = async () => {
                                 <option v-for="op in opcionesCompresor" :key="op" :value="op">{{ op }}</option>
                             </select>
                         </div>
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Intervalo de
                                 Mantenimiento (días)</label>
                             <input v-model="formData.intervalo_mantenimiento_dias" type="number" min="1" required
@@ -125,8 +143,11 @@ const handleSubmit = async () => {
                         </div>
                     </div>
                     <div class="p-4 bg-fondo flex justify-end gap-3 rounded-b-lg">
-                        <button @click="$emit('close')" type="button" class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
-                        <button type="submit" :disabled="isSaving" class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{ isSaving ? 'Guardando...' : 'Guardar'
+                        <button @click="$emit('close')" type="button"
+                            class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                        <button type="submit" :disabled="isSaving"
+                            class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{
+                                isSaving ? 'Guardando...' : 'Guardar'
                             }}</button>
                     </div>
                 </form>
