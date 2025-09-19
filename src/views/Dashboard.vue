@@ -69,7 +69,11 @@ const conteoFiltros = computed(() => {
 });
 
 onMounted(() => {
-  const q = query(collection(db, "equipos"), orderBy("numero_habitacion"));
+  const q = query(
+    collection(db, "equipos"),
+    where("estado", "==", "activo"), // <-- AÑADE ESTA LÍNEA
+    orderBy("numero_habitacion")
+  );
   onSnapshot(q, (querySnapshot) => {
     const equiposTemp = [];
     querySnapshot.forEach((doc) => {
@@ -104,27 +108,27 @@ onMounted(() => {
       <div class="flex flex-wrap gap-2 mt-3">
         <div class="flex flex-wrap gap-2 mt-3">
           <button @click="activeFilter = 'Todos'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Todos', 'bg-fondo text-texto-principal': activeFilter !== 'Todos' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Todos', 'bg-fondo text-texto-principal border border-borde': activeFilter !== 'Todos' }"
             class="px-3 py-1 text-sm rounded-full">
             Todos ({{ conteoFiltros['Todos'] }})
           </button>
           <button @click="activeFilter = 'Al Día'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Al Día', 'bg-fondo text-texto-principal': activeFilter !== 'Al Día' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Al Día', 'bg-fondo text-texto-principal border border-borde': activeFilter !== 'Al Día' }"
             class="px-3 py-1 text-sm rounded-full">
             Al Día ({{ conteoFiltros['Al Día'] }})
           </button>
           <button @click="activeFilter = 'Próximo'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Próximo', 'bg-fondo text-texto-principal': activeFilter !== 'Próximo' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Próximo', 'bg-fondo text-texto-principal border border-borde': activeFilter !== 'Próximo' }"
             class="px-3 py-1 text-sm rounded-full">
             Próximas ({{ conteoFiltros['Próximo'] }})
           </button>
           <button @click="activeFilter = 'Vencido'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Vencido', 'bg-fondo text-texto-principal': activeFilter !== 'Vencido' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Vencido', 'bg-fondo text-texto-principal border border-borde': activeFilter !== 'Vencido' }"
             class="px-3 py-1 text-sm rounded-full">
             Vencidas ({{ conteoFiltros['Vencido'] }})
           </button>
           <button @click="activeFilter = 'Fuera de Servicio'"
-            :class="{ 'bg-interactivo text-white': activeFilter === 'Fuera de Servicio', 'bg-fondo text-texto-principal': activeFilter !== 'Fuera de Servicio' }"
+            :class="{ 'bg-interactivo text-white': activeFilter === 'Fuera de Servicio', 'bg-fondo text-texto-principal border border-borde': activeFilter !== 'Fuera de Servicio' }"
             class="px-3 py-1 text-sm rounded-full">
             Fuera de Servicio ({{ conteoFiltros['Fuera de Servicio'] }})
           </button>

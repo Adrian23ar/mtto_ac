@@ -59,12 +59,12 @@ const handleSubmit = async () => {
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Nombre Completo</label>
                             <input v-model="formData.nombre_completo" type="text" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Rol</label>
                             <select v-model="formData.rol"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
                                 <option value="tecnico">Técnico</option>
                                 <option value="admin">Administrador</option>
                             </select>

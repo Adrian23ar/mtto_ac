@@ -1,12 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { useToast } from 'vue-toastification';
+import { PencilSquareIcon, PowerIcon } from '@heroicons/vue/24/solid';
+import GestionEquipoModal from '../../components/GestionEquipoModal.vue';
+import ConfirmacionModal from '../../components/ConfirmacionModal.vue';
 
 const toast = useToast();
 const db = getFirestore();
 const equipos = ref([]);
 const cargando = ref(true);
+
+const showGestionModal = ref(false);
+const equipoSeleccionado = ref(null);
+const confirmacionState = ref({ show: false, titulo: '', mensaje: '', onConfirm: () => { } });
 
 const fetchEquipos = async () => {
     cargando.value = true;
@@ -27,6 +34,44 @@ const fetchEquipos = async () => {
 };
 
 onMounted(fetchEquipos);
+
+const abrirModalCrear = () => {
+    equipoSeleccionado.value = null;
+    showGestionModal.value = true;
+};
+
+const abrirModalEditar = (equipo) => {
+    equipoSeleccionado.value = equipo;
+    showGestionModal.value = true;
+};
+
+const iniciarToggleEstado = (equipo) => {
+    const nuevoEstado = equipo.estado === 'activo' ? 'inactivo' : 'activo';
+    const accion = nuevoEstado === 'inactivo' ? 'desactivar' : 'reactivar';
+
+    confirmacionState.value = {
+        show: true,
+        titulo: `Confirmar ${accion}`,
+        mensaje: `¿Estás seguro de que quieres ${accion} el equipo de la habitación ${equipo.numero_habitacion}?`,
+        onConfirm: async () => {
+            try {
+                const docRef = doc(db, 'equipos', equipo.id);
+                await updateDoc(docRef, { estado: nuevoEstado });
+                toast.success(`Equipo ${accion}do con éxito.`);
+                fetchEquipos(); // Refresca la lista
+            } catch (error) {
+                toast.error(`Error al ${accion} el equipo.`);
+            }
+        }
+    };
+};
+
+const manejarConfirmacion = () => {
+    if (typeof confirmacionState.value.onConfirm === 'function') {
+        confirmacionState.value.onConfirm();
+    }
+    confirmacionState.value.show = false;
+};
 </script>
 
 <template>
@@ -36,7 +81,8 @@ onMounted(fetchEquipos);
                 <h2 class="text-xl font-bold text-texto-principal">Gestión de Equipos</h2>
                 <p class="text-texto-secundario text-sm">Crea, edita y desactiva las habitaciones y sus equipos.</p>
             </div>
-            <button class="bg-interactivo text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
+            <button @click="abrirModalCrear"
+                class="bg-interactivo text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
                 Crear Equipo
             </button>
         </div>
@@ -59,14 +105,29 @@ onMounted(fetchEquipos);
                         <td class="px-6 py-4 text-texto-secundario">{{ equipo.capacidad_btu }}</td>
                         <td class="px-6 py-4 text-texto-secundario">{{ equipo.estado_compresor }}</td>
                         <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
+                                :class="equipo.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'">
+                                {{ equipo.estado || 'activo' }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 flex items-center gap-4">
-                            <button class="font-medium text-interactivo hover:underline">Editar</button>
-                            <button class="font-medium text-status-rojo hover:underline">Desactivar</button>
+                            <button @click="abrirModalEditar(equipo)"
+                                class="font-medium text-interactivo hover:underline">
+                                <PencilSquareIcon class="h-5 w-5" />
+
+                            </button>
+                            <button @click="iniciarToggleEstado(equipo)" class="font-medium"
+                                :class="equipo.estado === 'activo' ? 'text-status-rojo hover:underline' : 'text-status-verde hover:underline'">
+                                <PowerIcon class="h-5 w-5" />
+                            </button>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <GestionEquipoModal :show="showGestionModal" :equipo="equipoSeleccionado" @close="showGestionModal = false"
+        @guardado="fetchEquipos" />
+    <ConfirmacionModal :show="confirmacionState.show" :titulo="confirmacionState.titulo"
+        :mensaje="confirmacionState.mensaje" @close="confirmacionState.show = false" @confirm="manejarConfirmacion" />
 </template>
