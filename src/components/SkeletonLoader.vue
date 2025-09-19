@@ -16,5 +16,5 @@ const styleObject = computed(() => ({
 </script>
 
 <template>
-    <div class="bg-gray-200 animate-pulse" :style="styleObject"></div>
+    <div class="bg-gray-200 dark:bg-gray-700 animate-pulse" :style="styleObject"></div>
 </template>

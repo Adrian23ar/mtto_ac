@@ -27,7 +27,7 @@ const puedeModificar = computed(() => {
 
 <template>
     <div class="bg-car border border-borde rounded-lg p-3">
-        <div class="flex justify-between items-start">
+        <div class="flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <CalendarDaysIcon class="h-6 w-6 text-interactivo" />
                 <div>

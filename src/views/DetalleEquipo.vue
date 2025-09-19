@@ -226,10 +226,12 @@ const tareasDefinidas = ref({
         { key: 'cambio_capacitor_arranque', label: 'Cambio de capacitor de arranque/marcha' },
         { key: 'cambio_capacitor_ventilador', label: 'Cambio de capacitor del ventilador' },
         { key: 'reemplazo_contactor', label: 'Reemplazo de contactor o relé' },
+        { key: 'reemplazo_protector_electrico', label: 'Reemplazo de protector eléctrico' },
         { key: 'reemplazo_protector_termico', label: 'Reemplazo de protector térmico' },
         { key: 'reemplazo_motor_evaporador', label: 'Reemplazo de motor del evaporador' },
         { key: 'reemplazo_motor_condensador', label: 'Reemplazo de motor del condensador' },
-        { key: 'reemplazo_rodamientos', label: 'Reemplazo de rodamientos de motor' },
+        { key: 'reemplazo_rodamientos_evaporador', label: 'Reemplazo de rodamientos de motor evaporador' },
+        { key: 'reemplazo_rodamientos_condensador', label: 'Reemplazo de rodamientos de motor condensador' },
     ]
 });
 

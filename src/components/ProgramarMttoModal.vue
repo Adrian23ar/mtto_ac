@@ -100,22 +100,22 @@ const handleSubmit = async () => {
                             <label for="fecha-programada"
                                 class="block text-sm font-semibold text-texto-principal mb-1">Fecha Programada</label>
                             <input type="date" id="fecha-programada" v-model="fechaProgramada" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
                         </div>
                         <div>
                             <label for="notas-programacion"
                                 class="block text-sm font-semibold text-texto-principal mb-1">Notas (Opcional)</label>
                             <textarea id="notas-programacion" v-model="notas" rows="4"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario"
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal"
                                 placeholder="Ej: Revisar ruido en el ventilador..."></textarea>
                         </div>
                     </div>
 
                     <div class="p-4 bg-fondo flex justify-end gap-3 rounded-b-lg">
                         <button @click="$emit('close')" type="button"
-                            class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                            class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm transition-all">Cancelar</button>
                         <button type="submit" :disabled="isSaving"
-                            class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">
+                            class="bg-interactivo hover:bg-interactivo-dark text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400 transition-all">
                             {{ isSaving ? 'Guardando...' : (programacionExistente ? 'Actualizar' : 'Programar') }}
 
                         </button>

@@ -143,11 +143,11 @@ onMounted(() => {
     </div>
 
     <div v-if="cargando" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <div v-for="n in 8" :key="n" class="bg-gray-50 rounded-lg shadow h-full p-4 space-y-3">
+      <div v-for="n in 8" :key="n" class="bg-gray-100 dark:bg-gray-800 rounded-lg shadow h-full p-4 space-y-3">
         <SkeletonLoader height="2rem" width="60%" borderRadius="0.5rem" />
         <SkeletonLoader height="1rem" width="40%" />
         <SkeletonLoader height="1.25rem" width="50%" />
-        <div class="border-t mt-3 pt-3">
+        <div class="border-t border-borde mt-3 pt-3">
           <SkeletonLoader height="1rem" width="100%" />
         </div>
       </div>

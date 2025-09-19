@@ -16,6 +16,7 @@ export default {
         'texto-secundario': 'rgb(var(--color-texto-secundario) / <alpha-value>)',
         'borde': 'rgb(var(--color-borde) / <alpha-value>)',
         'interactivo': 'rgb(var(--color-interactivo) / <alpha-value>)',
+        'interactivo-dark': 'rgb(var(--color-interactivo-dark) / <alpha-value>)',
         
         // --- Los colores de estado se mantienen fijos, ya que no cambian con el tema ---
         'status-rojo': '#ea4a4a',
