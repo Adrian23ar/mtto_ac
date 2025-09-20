@@ -13,6 +13,7 @@ import ReportesView from '../views/Reportes.vue';
 import AdminWrapper from '../views/admin/AdminWrapper.vue';
 import GestionUsuariosView from '../views/admin/GestionUsuarios.vue';
 import GestionEquiposView from '../views/admin/GestionEquipos.vue';
+import GestionTareas from '../views/admin/GestionTareas.vue';
 
 const routes = [
     {
@@ -56,7 +57,12 @@ const routes = [
                 path: 'equipos',
                 name: 'admin-equipos',
                 component: GestionEquiposView,
-            }
+            },
+            {
+                path: 'tareas',
+                name: 'admin-tareas',
+                component: GestionTareas,
+            },
         ]
     }
 ];

@@ -8,7 +8,7 @@ import { useAuth } from '../composables/useAuth';
 const props = defineProps({
     show: { type: Boolean, default: false },
     equipoId: { type: String, required: true },
-    numeroHabitacion: { type: String, required: true },
+    nombreDisplay: { type: String, required: true }, 
     programacionExistente: { type: Object, default: null }
 });
 const emit = defineEmits(['close']);
@@ -62,7 +62,7 @@ const handleSubmit = async () => {
         } else {
             await addDoc(collection(db, 'mantenimientos_programados'), {
                 equipoId: props.equipoId,
-                numero_habitacion: props.numeroHabitacion,
+                nombre_display_equipo: props.nombreDisplay,
                 fecha_programada: new Date(`${fechaProgramada.value}T12:00:00`),
                 notas: notas.value,
                 estado: 'Programado', // Estados pueden ser: Programado, Completado, Cancelado

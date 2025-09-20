@@ -18,7 +18,7 @@ const confirmacionState = ref({ show: false, titulo: '', mensaje: '', onConfirm:
 const fetchEquipos = async () => {
     cargando.value = true;
     try {
-        const q = query(collection(db, "equipos"), orderBy("numero_habitacion"));
+        const q = query(collection(db, "equipos"), orderBy("nombre_display"));
         const querySnapshot = await getDocs(q);
         const equiposTemp = [];
         querySnapshot.forEach((doc) => {
@@ -52,7 +52,7 @@ const iniciarToggleEstado = (equipo) => {
     confirmacionState.value = {
         show: true,
         titulo: `Confirmar ${accion}`,
-        mensaje: `¿Estás seguro de que quieres ${accion} el equipo de la habitación ${equipo.numero_habitacion}?`,
+        mensaje: `¿Estás seguro de que quieres ${accion} el equipo  "${equipo.nombre_display}"?`,
         onConfirm: async () => {
             try {
                 const docRef = doc(db, 'equipos', equipo.id);
@@ -101,7 +101,7 @@ const manejarConfirmacion = () => {
                 </thead>
                 <tbody>
                     <tr v-for="equipo in equipos" :key="equipo.id" class="border-b border-borde">
-                        <td class="px-6 py-4 font-medium text-texto-principal">{{ equipo.numero_habitacion }}</td>
+                        <td class="px-6 py-4 font-medium text-texto-principal">{{ equipo.nombre_display }}</td>
                         <td class="px-6 py-4 text-texto-secundario">{{ equipo.capacidad_btu }}</td>
                         <td class="px-6 py-4 text-texto-secundario">{{ equipo.estado_compresor }}</td>
                         <td class="px-6 py-4">

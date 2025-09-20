@@ -23,6 +23,10 @@
               active-class="border-interactivo text-interactivo"
               inactive-class="border-transparent text-texto-secundario hover:border-gray-300 hover:text-texto-principal">Equipos
             </router-link>
+            <router-link to="/admin/tareas" class="py-2 px-1 border-b-2 font-medium text-sm"
+              active-class="border-interactivo text-interactivo"
+              inactive-class="border-transparent text-texto-secundario hover:border-gray-300 hover:text-texto-principal">Tareas
+            </router-link>
           </div>
         </nav>
       </aside>

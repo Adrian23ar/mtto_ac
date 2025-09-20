@@ -15,16 +15,16 @@ defineEmits(['close', 'confirm']);
 
             <div class="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
                 <div class="p-4 border-b">
-                    <h3 class="text-lg font-bold text-gray-900">{{ titulo }}</h3>
+                    <h3 class="text-lg font-bold text-texto-principal">{{ titulo }}</h3>
                 </div>
 
                 <div class="p-6">
-                    <p class="text-sm text-gray-600">{{ mensaje }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ mensaje }}</p>
                 </div>
 
-                <div class="p-4 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
+                <div class="p-4 bg-card flex justify-end gap-3 rounded-b-lg">
                     <button @click="$emit('close')" type="button"
-                        class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition-colors">
+                        class="bg-gray-200 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition-colors">
                         Cancelar
                     </button>
                     <button @click="$emit('confirm')" type="button"

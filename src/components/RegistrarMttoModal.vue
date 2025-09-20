@@ -1,8 +1,8 @@
 <script setup>
 // src/components/RegistrarMttoModal.vue
-import { ref, watch, watchEffect } from 'vue';
+import { ref, watch, watchEffect, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
-import { getFirestore, doc, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, collection, writeBatch, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { auth } from '../firebase/config';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
@@ -10,7 +10,6 @@ import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
 const props = defineProps({
     show: { type: Boolean, default: false },
     equipoId: { type: String, required: true },
-    tareasDefinidas: { type: Object, required: true },
     mantenimientoExistente: { type: Object, default: null },
     programacionIdParaCompletar: { type: String, default: null }
 
@@ -24,6 +23,18 @@ const observaciones = ref('');
 const tareasCompletadas = ref({});
 const isSaving = ref(false);
 const openSection = ref('preventivas'); // Esta ya la tienes
+const tareasDefinidas = ref({ preventivas: [], correctivas: [] });
+
+onMounted(() => {
+    const docRef = doc(getFirestore(), 'configuracion', 'tareas');
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            tareasDefinidas.value = docSnap.data();
+        } else {
+            toast.error("No se pudo cargar la lista de tareas.");
+        }
+    });
+});
 
 const toggleSection = (section) => {
     // Si la sección clickeada ya está abierta, la cerramos. Si no, la abrimos.
@@ -38,32 +49,30 @@ watch(() => props.show, (newValue) => {
 });
 
 watchEffect(() => {
-  if (props.show && props.mantenimientoExistente) {
-    // Llenamos los campos que siempre existen o tienen un valor por defecto
-    observaciones.value = props.mantenimientoExistente.observaciones_servicio || '';
-    duracion.value = props.mantenimientoExistente.duracion_minutos || 30;
+    if (props.show && props.mantenimientoExistente) {
+        observaciones.value = props.mantenimientoExistente.observaciones_servicio || '';
+        duracion.value = props.mantenimientoExistente.duracion_minutos || 30;
 
-    // SOLO intentamos llenar los checkboxes si el objeto 'tareas_realizadas' existe
-    if (props.mantenimientoExistente.tareas_realizadas) {
-      const completadas = {};
-      const todasLasTareas = [...props.tareasDefinidas.preventivas, ...props.tareasDefinidas.correctivas];
+        if (props.mantenimientoExistente.tareas_realizadas) {
+            const completadas = {};
+            // Ahora usamos las tareas que vienen de Firestore
+            const todasLasTareas = [...tareasDefinidas.value.preventivas, ...tareasDefinidas.value.correctivas];
 
-      todasLasTareas.forEach(tareaDefinida => {
-        const preventivasExistentes = props.mantenimientoExistente.tareas_realizadas.preventivas || [];
-        const correctivasExistentes = props.mantenimientoExistente.tareas_realizadas.correctivas || [];
+            todasLasTareas.forEach(tareaDefinida => {
+                const preventivasExistentes = props.mantenimientoExistente.tareas_realizadas.preventivas || [];
+                const correctivasExistentes = props.mantenimientoExistente.tareas_realizadas.correctivas || [];
 
-        if (preventivasExistentes.includes(tareaDefinida.label) || correctivasExistentes.includes(tareaDefinida.label)) {
-          completadas[tareaDefinida.key] = true;
+                if (preventivasExistentes.includes(tareaDefinida.label) || correctivasExistentes.includes(tareaDefinida.label)) {
+                    completadas[tareaDefinida.key] = true;
+                }
+            });
+            tareasCompletadas.value = completadas;
         }
-      });
-      tareasCompletadas.value = completadas;
+    } else if (props.show) {
+        observaciones.value = '';
+        duracion.value = 30;
+        tareasCompletadas.value = {};
     }
-  } else if (props.show) {
-    // Si es un mantenimiento nuevo (no edición), reseteamos todo
-    observaciones.value = '';
-    duracion.value = 30;
-    tareasCompletadas.value = {};
-  }
 });
 
 const handleSubmit = async () => {
@@ -82,24 +91,21 @@ const handleSubmit = async () => {
         const db = getFirestore();
         const user = auth.currentUser;
         const batch = writeBatch(db);
-        // Construimos el nuevo objeto de tareas realizadas
         const tareasRealizadas = {
-            preventivas: props.tareasDefinidas.preventivas
+            preventivas: tareasDefinidas.value.preventivas
                 .filter(t => tareasCompletadas.value[t.key])
                 .map(t => t.label),
-            correctivas: props.tareasDefinidas.correctivas
+            correctivas: tareasDefinidas.value.correctivas
                 .filter(t => tareasCompletadas.value[t.key])
                 .map(t => t.label)
         };
 
-        // Determinamos el tipo principal basado en las tareas realizadas
         let tipoPrincipal = 'Preventivo';
         if (tareasRealizadas.correctivas.length > 0) {
             tipoPrincipal = 'Correctivo';
         }
 
         if (props.mantenimientoExistente && props.mantenimientoExistente.id) {
-            // CASO 1: Estamos EDITANDO un mantenimiento del HISTORIAL
             const mantenimientoRef = doc(db, 'mantenimientos', props.mantenimientoExistente.id);
             batch.update(mantenimientoRef, {
                 duracion_minutos: duracion.value,
@@ -110,7 +116,6 @@ const handleSubmit = async () => {
             toast.success('¡Mantenimiento actualizado con éxito!');
 
         } else {
-            // CASO 2: Estamos CREANDO un nuevo mantenimiento (ya sea desde cero o completando uno programado)
             const nuevoMantenimientoRef = doc(collection(db, 'mantenimientos'));
             batch.set(nuevoMantenimientoRef, {
                 equipoId: props.equipoId,
@@ -126,7 +131,6 @@ const handleSubmit = async () => {
             const equipoRef = doc(db, 'equipos', props.equipoId);
             const datosActualizacionEquipo = { ultimo_mantenimiento: serverTimestamp() };
 
-            // Aquí actualizaremos solo las tareas que definimos como "críticas"
             const tareasCriticasKeys = ['cambio_baterias_termostato', 'cambio_rodamientos_condensador', 'cambio_rodamientos_motor_evaporador', 'lavado_unidad_evaporadora', 'lavado_unidad_condensadora', 'cambio_capacitor'];
             Object.keys(tareasCompletadas.value).forEach(key => {
                 if (tareasCompletadas.value[key] && tareasCriticasKeys.includes(key)) {
@@ -143,8 +147,7 @@ const handleSubmit = async () => {
 
             toast.success('¡Mantenimiento registrado con éxito!');
         }
-        
-        
+
         await batch.commit();
         emit('close');
 
@@ -192,7 +195,7 @@ const handleSubmit = async () => {
                                             class="min-h-5 min-w-5 h-5 w-5 md:min-h-4 md:min-w-4 md:h-4 md:w-4 rounded border-borde text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-texto-principal">{{
                                             tarea.label
-                                        }}</label>
+                                            }}</label>
                                     </div>
                                 </div>
                             </Transition>
@@ -219,7 +222,7 @@ const handleSubmit = async () => {
                                             class="h-4 w-4 rounded border-borde text-interactivo focus:ring-interactivo">
                                         <label :for="tarea.key" class="ml-2 block text-sm text-texto-principal">{{
                                             tarea.label
-                                        }}</label>
+                                            }}</label>
                                     </div>
                                 </div>
                             </Transition>

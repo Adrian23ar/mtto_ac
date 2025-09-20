@@ -3,6 +3,9 @@ import { ref, onMounted, computed } from 'vue';
 import { getFirestore, collection, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import EquipoCard from '../components/EquipoCard.vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue';
+import 'v-calendar/style.css';
+import { Calendar } from 'v-calendar';
+import { useTheme } from '../composables/useTheme';
 
 const db = getFirestore();
 const equipos = ref([]);
@@ -10,7 +13,64 @@ const mantenimientosProgramados = ref([]);
 const searchTerm = ref('');
 const activeFilter = ref('Todos');
 const cargando = ref(true);
+const { theme } = useTheme();
 
+const calendarioAttrs = computed(() => {
+  const eventos = [];
+
+  // 1. Primero, creamos un Set con los IDs de los equipos que ya tienen una programación.
+  // Un Set es muy rápido para hacer búsquedas.
+  const equiposConProgramacion = new Set(
+    mantenimientosProgramados.value.map(p => p.equipoId)
+  );
+
+  // 2. Procesamos los mantenimientos programados como siempre.
+  mantenimientosProgramados.value.forEach(prog => {
+    eventos.push({
+      key: prog.id,
+      customData: {
+        titulo: prog.nombre_display_equipo,
+        tipo: 'Programado'
+      },
+      dates: prog.fecha_programada.toDate(),
+      dot: 'purple',
+      popover: true,
+    });
+  });
+
+  // 3. Al procesar los equipos por ciclo, añadimos una condición.
+  equipos.value.forEach(equipo => {
+    // ¡CONDICIÓN CLAVE! Si el equipo ya tiene una programación, lo saltamos.
+    if (equiposConProgramacion.has(equipo.id)) {
+      return;
+    }
+
+    if (equipo.ultimo_mantenimiento) {
+      const fechaUltimo = equipo.ultimo_mantenimiento.toDate();
+      const fechaProximo = new Date(fechaUltimo);
+      fechaProximo.setDate(fechaProximo.getDate() + (equipo.intervalo_mantenimiento_dias || 90));
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      eventos.push({
+        key: equipo.id,
+        customData: {
+          titulo: equipo.nombre_display,
+          tipo: fechaProximo < hoy ? 'Vencido' : 'Por Ciclo'
+        },
+        dates: fechaProximo,
+        dot: fechaProximo < hoy ? 'red' : 'blue',
+        popover: true,
+      });
+    }
+  });
+
+  return eventos;
+});
+
+
+// --- El resto del script se mantiene exactamente igual ---
 const getEquipoStatus = (equipo) => {
   if (equipo.fuera_de_servicio) return 'Fuera de Servicio';
   if (!equipo.ultimo_mantenimiento) return 'Próximo';
@@ -35,7 +95,6 @@ const equiposFiltrados = computed(() => {
   if (searchTerm.value) {
     const busquedaMinuscula = searchTerm.value.toLowerCase();
     equiposTemp = equiposTemp.filter(equipo => {
-      // CAMBIO IMPORTANTE: Buscamos en 'nombre_display'
       const nombre = equipo.nombre_display.toLowerCase();
       const ubicacion = (equipo.ubicacion_condensadora || '').toLowerCase();
       return nombre.includes(busquedaMinuscula) || ubicacion.includes(busquedaMinuscula);
@@ -67,7 +126,6 @@ onMounted(() => {
   const q = query(
     collection(db, "equipos"),
     where("estado", "==", "activo"),
-    // CAMBIO IMPORTANTE: Ordenamos por 'nombre_display'
     orderBy("nombre_display")
   );
   onSnapshot(q, (querySnapshot) => {
@@ -95,6 +153,24 @@ onMounted(() => {
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-texto-principal">Panel de Mantenimiento</h1>
       <p class="text-texto-secundario">Gestión de Aires Acondicionados</p>
+    </div>
+
+    <div class="bg-card p-4 rounded-lg shadow-sm mb-6">
+      <h2 class="font-semibold text-texto-principal mb-3">Calendario de Mantenimientos</h2>
+      <Calendar is-expanded :attributes="calendarioAttrs" :is-dark="theme === 'dark'" color="teal"
+        title-position="left">
+        <template #day-popover="{ attributes }">
+          <div class="p-2 text-sm bg-card text-texto-principal">
+            <p class="font-bold mb-2">Mantenimientos del Día</p>
+            <ul>
+              <li v-for="attr in attributes" :key="attr.key" class="flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full" :class="`bg-${attr.dot}-500`"></span>
+                <span>{{ attr.customData.titulo }} ({{ attr.customData.tipo }})</span>
+              </li>
+            </ul>
+          </div>
+        </template>
+      </Calendar>
     </div>
 
     <div class="bg-card dark:bg-negro_card p-4 rounded-lg shadow-sm mb-6">

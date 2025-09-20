@@ -161,7 +161,7 @@ const iniciarBorradoHistorial = (item) => {
   abrirConfirmacion(
     'Confirmar Eliminación',
     '¿Estás seguro de que quieres eliminar este registro de mantenimiento del historial? Esta acción no se puede deshacer.',
-    async () => { // La lógica de borrado va aquí
+    async () => {
       try {
         const docRef = doc(db, 'mantenimientos', item.id);
         await deleteDoc(docRef);
@@ -216,18 +216,15 @@ const iniciarEdicion = (mantenimiento) => {
 };
 
 const iniciarCompletado = (programacion) => {
-    // --- NUEVA VALIDACIÓN DE FECHA ---
     const fechaProgramada = programacion.fecha_programada.toDate();
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
     if (fechaProgramada > hoy) {
         toast.info('No se puede completar un mantenimiento programado para una fecha futura.');
-        return; // Detenemos la ejecución
+        return;
     }
-    // --- FIN DE LA VALIDACIÓN ---
 
-    // El resto de la función se mantiene igual
     const prellenado = {
         observaciones_servicio: programacion.notas,
     };
@@ -243,39 +240,6 @@ const cerrarModalRegistro = () => {
     programacionACompletarId.value = null; // Limpiamos el ID al cerrar
 };
 
-const tareasDefinidas = ref({
-    preventivas: [
-        { key: 'lavado_serpentin_evaporador', label: 'Lavado de serpentin evaporador' },
-        { key: 'limpieza_filtros_aire', label: 'Limpieza de filtros de aire' },
-        { key: 'limpieza_bandeja_drenaje', label: 'Limpieza de bandeja de drenaje' },
-        { key: 'limpieza_tuberia_drenaje', label: 'Soplado o limpieza de tubería de drenaje' },
-        { key: 'mantenimiento_motor_evaporador', label: 'Mantenimiento al motor del evaporador (Limpieza)' },
-        { key: 'limpieza_carcasa_rejillas', label: 'Limpieza de carcasa y rejillas' },
-        { key: 'lavado_serpentin_condensador', label: 'Lavado de serpentin condensador' },
-        { key: 'mantenimiento_motor_condensador', label: 'Mantenimiento al motor del condensador' },
-        { key: 'ajuste_conexiones_electricas', label: 'Revisión y ajuste de conexiones eléctricas' },
-        { key: 'medicion_amperaje_compresor', label: 'Medición de amperaje del compresor' },
-        { key: 'medicion_amperaje_motor_evaporador', label: 'Medición de amperaje del Motor Evaporador' },
-        { key: 'medicion_amperaje_motor_condensador', label: 'Medición de amperaje del Motor Condensador' },
-        { key: 'verificacion_presiones_gas', label: 'Verificación de presiones de gas (Baja/Alta)' },
-    ],
-    correctivas: [
-
-        { key: 'correccion_fuga_gas', label: 'Corrección de fuga de gas' },
-        { key: 'recarga_gas', label: 'Recarga de gas refrigerante' },
-        { key: 'cambio_capacitor_arranque', label: 'Cambio de capacitor de arranque/marcha' },
-        { key: 'cambio_capacitor_ventilador', label: 'Cambio de capacitor del ventilador' },
-        { key: 'reemplazo_contactor', label: 'Reemplazo de contactor o relé' },
-        { key: 'reemplazo_protector_electrico', label: 'Reemplazo de protector eléctrico' },
-        { key: 'reemplazo_protector_termico', label: 'Reemplazo de protector térmico' },
-        { key: 'reemplazo_motor_evaporador', label: 'Reemplazo de motor del evaporador' },
-        { key: 'reemplazo_motor_condensador', label: 'Reemplazo de motor del condensador' },
-        { key: 'reemplazo_rodamientos_evaporador', label: 'Reemplazo de rodamientos de motor evaporador' },
-        { key: 'reemplazo_rodamientos_condensador', label: 'Reemplazo de rodamientos de motor condensador' },
-        { key: 'reemplazo_compresor', label: 'Reemplazo de Compresor' },
-    ]
-});
-
 const opcionesCapacidad = ref([
     '12,000 BTU',
     '18,000 BTU',
@@ -287,10 +251,9 @@ const opcionesCapacidad = ref([
     '10 Toneladas'
 ]);
 const formatDate = (dateInput) => {
-    // Si no hay fecha de entrada, devolvemos 'N/A'
     if (!dateInput) return 'N/A';
 
-    let date; // Esta variable guardará un objeto de fecha estándar de JS
+    let date;
 
     // Comprobamos si el input es un Timestamp de Firebase (si tiene el método .toDate)
     if (typeof dateInput.toDate === 'function') {
@@ -592,11 +555,10 @@ const estadoGeneral = computed(() => {
                 @confirm="manejarConfirmacion" />
         </div>
 
-        <RegistrarMttoModal v-if="showModal" :show="showModal" :equipoId="equipoId" :tareasDefinidas="tareasDefinidas"
-            :mantenimientoExistente="mantenimientoAEditar" @close="cerrarModalRegistro" />
+        <RegistrarMttoModal v-if="showModal" :show="showModal" :equipoId="equipoId" :mantenimientoExistente="mantenimientoAEditar" @close="cerrarModalRegistro" />
 
         <ProgramarMttoModal v-if="showProgramarModal" :show="showProgramarModal" :equipoId="equipoId"
-            :numeroHabitacion="equipo.numero_habitacion" :programacionExistente="programacionAEditar"
+            :nombreDisplay="equipo.nombre_display"  :programacionExistente="programacionAEditar"
             @close="cerrarModalProgramacion" />
 
     </div>

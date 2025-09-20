@@ -1,4 +1,5 @@
 <script setup>
+// src/components/HistorialCard.vue
 import { computed } from 'vue';
 import { ClockIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { useAuth } from '../composables/useAuth';
@@ -6,7 +7,8 @@ import { useAuth } from '../composables/useAuth';
 const { userProfile } = useAuth();
 
 const props = defineProps({
-    mantenimiento: { type: Object, required: true }
+    mantenimiento: { type: Object, required: true },
+    showActions: { type: Boolean, default: true }
 });
 
 const emit = defineEmits(['borrar', 'editar']); // <-- AÑADE 'editar'
@@ -51,14 +53,16 @@ const puedeModificar = computed(() => {
                     Correctivo
                 </span>
             </div>
-             <div v-if="puedeModificar" class="flex items-center gap-2">
-                    <button @click.prevent="emit('editar')" class="text-texto-secundario hover:text-interactivo" title="Editar">
-                        <PencilIcon class="h-5 w-5" />
-                    </button>
-                    <button @click.prevent="emit('borrar')" class="text-texto-secundario hover:text-status-rojo" title="Eliminar">
-                        <TrashIcon class="h-5 w-5" />
-                    </button>
-                </div>
+            <div v-if="puedeModificar && showActions" class="flex items-center gap-2">
+                <button @click.prevent="emit('editar')" class="text-texto-secundario hover:text-interactivo"
+                    title="Editar">
+                    <PencilIcon class="h-5 w-5" />
+                </button>
+                <button @click.prevent="emit('borrar')" class="text-texto-secundario hover:text-status-rojo"
+                    title="Eliminar">
+                    <TrashIcon class="h-5 w-5" />
+                </button>
+            </div>
         </div>
 
         <div class="text-sm space-y-3">

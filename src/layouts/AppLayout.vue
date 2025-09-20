@@ -3,11 +3,15 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
-import ThemeToggle from '../components/ThemeToggle.vue';
 import { useAuth } from '../composables/useAuth';
+import { useNotifications } from '../composables/useNotifications';
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'; // Importa los íconos del menú
+import ThemeToggle from '../components/ThemeToggle.vue';
+import NotificationsBell from '../components/NotificationsBell.vue';
 
 const { userProfile } = useAuth();
+useNotifications(); 
+
 const router = useRouter();
 const isMenuOpen = ref(false); // Estado para controlar el menú móvil
 
@@ -37,6 +41,7 @@ const handleLogout = async () => {
           <router-link v-if="userProfile?.rol === 'admin'" to="/admin/usuarios"
             class="text-sm font-semibold text-interactivo hover:text-interactivo/80 transition-all">Admin</router-link>
           <ThemeToggle />
+          <NotificationsBell />
           <button @click="handleLogout"
             class="bg-status-rojo text-white px-3 py-2 rounded-md text-sm hover:bg-red-700 transition-colors">
             Cerrar Sesión
@@ -52,19 +57,23 @@ const handleLogout = async () => {
       </nav>
 
       <div v-if="isMenuOpen" class="md:hidden bg-card border-t border-borde">
-        <nav class="container mx-auto px-4 pt-2 pb-4 flex flex-col space-y-2">
+        <nav class="container mx-auto px-4 pt-2 pb-2 flex flex-col space-y-1">
           <router-link to="/dashboard" @click="isMenuOpen = false"
             class="px-3 py-2 rounded-md text-texto-secundario hover:bg-fondo">Dashboard</router-link>
           <router-link to="/reportes" @click="isMenuOpen = false"
             class="px-3 py-2 rounded-md text-texto-secundario hover:bg-fondo">Reportes</router-link>
           <router-link v-if="userProfile?.rol === 'admin'" to="/admin/usuarios" @click="isMenuOpen = false"
             class="px-3 py-2 rounded-md text-interactivo hover:bg-fondo">Admin</router-link>
-          <div class="border-t border-borde pt-4 mt-2 flex justify-between items-center">
-            <ThemeToggle />
+          <div class="border-t border-borde pt-2 ps-2">
             <button @click="handleLogout" class="bg-status-rojo text-white px-3 py-2 rounded-md text-sm">
               Cerrar Sesión
             </button>
           </div>
+          <div class="border-t border-borde flex justify-around items-center pt-2">
+            <ThemeToggle />
+            <NotificationsBell />
+          </div>
+
         </nav>
       </div>
     </header>
