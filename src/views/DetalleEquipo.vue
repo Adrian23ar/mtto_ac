@@ -12,6 +12,7 @@ import ProgramarMttoModal from '../components/ProgramarMttoModal.vue';
 import ProgramacionCard from '../components/ProgramacionCard.vue';
 
 import { PencilSquareIcon, CheckIcon, XMarkIcon, Cog6ToothIcon, DocumentTextIcon, CalendarDaysIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline';
+import { CheckCircleIcon, NoSymbolIcon } from '@heroicons/vue/24/solid';
 
 // --- (refs existentes) ---
 const toast = useToast();
@@ -19,15 +20,18 @@ const route = useRoute();
 const router = useRouter();
 const equipo = ref(null);
 const cargando = ref(true);
-const showModal = ref(false);
 const db = getFirestore();
 const equipoId = route.params.id;
+
+const activeTab = ref('informacion'); // Pestaña activa por defecto
+const showModal = ref(false);
 const showProgramarModal = ref(false);
 const mantenimientosProgramados = ref([]);
 const historialMantenimientos = ref([]);
 const mantenimientoAEditar = ref(null);
 const programacionAEditar = ref(null);
 const programacionACompletarId = ref(null);
+const formData = ref({});
 
 const confirmacionState = ref({
     show: false,
@@ -41,8 +45,27 @@ const isEditingInfo = ref(false);
 const isEditingObservaciones = ref(false);
 const isEditingProgramacion = ref(false);
 
-// Objeto temporal para guardar los datos del formulario mientras se edita
-const formData = ref({});
+const progresoCiclo = computed(() => {
+    if (!equipo.value || !equipo.value.ultimo_mantenimiento || equipo.value.fuera_de_servicio) {
+        return { diasTranscurridos: 0, totalDias: equipo.value?.intervalo_mantenimiento_dias || 90, porcentaje: 0 };
+    }
+    const fechaUltimo = equipo.value.ultimo_mantenimiento.toDate();
+    const hoy = new Date();
+    const totalDias = equipo.value.intervalo_mantenimiento_dias || 90;
+
+    // Asegurarse de que no contamos días negativos si el último mtto es en el futuro (poco probable)
+    const diasTranscurridos = Math.max(0, (hoy - fechaUltimo) / (1000 * 60 * 60 * 24));
+
+    // El progreso no puede ser mayor a 100%
+    const porcentaje = Math.min(100, (diasTranscurridos / totalDias) * 100);
+
+    return {
+        diasTranscurridos: Math.floor(diasTranscurridos),
+        totalDias: totalDias,
+        porcentaje: Math.floor(porcentaje)
+    };
+});
+
 
 onMounted(() => {
     // --- Esta parte para obtener los datos del equipo se mantiene igual ---
@@ -56,7 +79,6 @@ onMounted(() => {
         cargando.value = false;
     });
 
-    // --- 3. NUEVA CONSULTA PARA OBTENER EL HISTORIAL ---
     // Creamos una consulta a la colección 'mantenimientos'
     const historialQuery = query(
         collection(db, "mantenimientos"),
@@ -73,12 +95,12 @@ onMounted(() => {
         historialMantenimientos.value = historicoTemp;
     });
 
-const programadosQuery = query(
-  collection(db, "mantenimientos_programados"),
-  where("equipoId", "==", equipoId),
-  where("estado", "in", ["Programado", "Cancelado"]),
-  orderBy("fecha_programada", "desc")
-);
+    const programadosQuery = query(
+        collection(db, "mantenimientos_programados"),
+        where("equipoId", "==", equipoId),
+        where("estado", "in", ["Programado", "Cancelado"]),
+        orderBy("fecha_programada", "desc")
+    );
 
     onSnapshot(programadosQuery, (querySnapshot) => {
         const programadosTemp = [];
@@ -141,37 +163,37 @@ const toggleFueraDeServicio = () => {
 };
 
 const iniciarCancelacion = (item) => {
-  abrirConfirmacion(
-    'Confirmar Cancelación',
-    '¿Estás seguro de que quieres cancelar esta programación?',
-    async () => {
-      try {
-        const docRef = doc(db, 'mantenimientos_programados', item.id);
-        await updateDoc(docRef, { estado: 'Cancelado' }); // <-- Cambiamos a updateDoc
-        toast.success('Programación cancelada.');
-      } catch (error) {
-        toast.error("Hubo un error al cancelar.");
-      }
-    }
-  );
+    abrirConfirmacion(
+        'Confirmar Cancelación',
+        '¿Estás seguro de que quieres cancelar esta programación?',
+        async () => {
+            try {
+                const docRef = doc(db, 'mantenimientos_programados', item.id);
+                await updateDoc(docRef, { estado: 'Cancelado' }); // <-- Cambiamos a updateDoc
+                toast.success('Programación cancelada.');
+            } catch (error) {
+                toast.error("Hubo un error al cancelar.");
+            }
+        }
+    );
 };
 
 // Esta función es para eliminar un registro del HISTORIAL de mantenimientos
 const iniciarBorradoHistorial = (item) => {
-  abrirConfirmacion(
-    'Confirmar Eliminación',
-    '¿Estás seguro de que quieres eliminar este registro de mantenimiento del historial? Esta acción no se puede deshacer.',
-    async () => {
-      try {
-        const docRef = doc(db, 'mantenimientos', item.id);
-        await deleteDoc(docRef);
-        toast.success('Registro de historial eliminado con éxito.');
-      } catch (error) {
-        console.error("Error al eliminar el historial:", error);
-        toast.error("Hubo un error al eliminar el registro.");
-      }
-    }
-  );
+    abrirConfirmacion(
+        'Confirmar Eliminación',
+        '¿Estás seguro de que quieres eliminar este registro de mantenimiento del historial? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                const docRef = doc(db, 'mantenimientos', item.id);
+                await deleteDoc(docRef);
+                toast.success('Registro de historial eliminado con éxito.');
+            } catch (error) {
+                console.error("Error al eliminar el historial:", error);
+                toast.error("Hubo un error al eliminar el registro.");
+            }
+        }
+    );
 };
 
 const startEditing = (section) => {
@@ -326,215 +348,257 @@ const estadoGeneral = computed(() => {
                     </div>
                 </div>
 
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="font-semibold text-texto-principal">Estado de Servicio</h2>
-                        <button @click="toggleFueraDeServicio" class="text-sm px-3 py-1 rounded-md transition-colors"
-                            :class="equipo.fuera_de_servicio ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-100' : 'bg-gray-200 dark:bg-gray-700 text-texto-principal hover:bg-gray-300 dark:hover:bg-gray-600'">
-                            {{ equipo.fuera_de_servicio ? 'Quitar Fuera de Servicio' : 'Poner Fuera de Servicio' }}
-                        </button>
+                <div
+                    class="bg-card p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div class="flex items-center gap-4 ps-4 sm:ps-0">
+                        <template v-if="equipo.fuera_de_servicio">
+                            <NoSymbolIcon class="h-10 w-10 text-status-rojo flex-shrink-0" />
+                            <div>
+                                <h2 class="font-bold text-texto-principal">Fuera de Servicio</h2>
+                                <p class="text-sm text-texto-secundario">El equipo no está operativo.</p>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <CheckCircleIcon class="h-10 w-10 text-status-verde flex-shrink-0" />
+                            <div>
+                                <h2 class="font-bold text-texto-principal">Operativo</h2>
+                                <p class="text-sm text-texto-secundario">El equipo se encuentra operativo.</p>
+                            </div>
+                        </template>
                     </div>
-                    <p v-if="equipo.fuera_de_servicio" class="text-sm text-red-600 dark:text-red-500 mt-2">
-                        Este equipo se encuentra actualmente <span class="font-semibold">Fuera de Servicio</span>.
-                    </p>
-                    <p v-else class="text-sm text-texto-secundario mt-2">
-                        El equipo se encuentra operativo.
-                    </p>
+                    <button @click="toggleFueraDeServicio"
+                        class="w-full sm:w-auto text-sm font-semibold px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+                        :class="equipo.fuera_de_servicio
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-300'
+                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200'">
+                        {{ equipo.fuera_de_servicio ? 'Poner Operativo' : 'Poner Fuera de Servicio' }}
+                    </button>
                 </div>
 
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <div v-if="!isEditingInfo">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <Cog6ToothIcon class="h-5 w-5 text-texto-secundario" />
-                                Información del Equipo
-                            </h2>
-                            <button @click="startEditing('info')"
-                                class="text-gray-400/80 hover:text-texto-secundario p-1">
-                                <PencilSquareIcon class="h-5 w-5" />
-                            </button>
-                        </div>
-                        <div class="text-sm space-y-2 text-texto-secundario">
-                            <p><span class="font-semibold text-texto-principal">Ubicación:</span> {{
-                                equipo.ubicacion_condensadora
-                            }}
-                            </p>
-                            <p><span class="font-semibold text-texto-principal">Capacidad:</span> {{
-                                equipo.capacidad_btu }}
-                            </p>
-                            <p><span class="font-semibold text-texto-principal">Compresor:</span> {{
-                                equipo.estado_compresor }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div v-else>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <Cog6ToothIcon class="h-5 w-5 text-texto-secundario" />
-                                Información del Equipo
-                            </h2>
-                            <div class="flex gap-2">
-                                <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
-                                    <CheckIcon class="h-5 w-5" />
-                                </button>
-                                <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
-                                    <XMarkIcon class="h-5 w-5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="text-sm space-y-3">
-                            <div>
-                                <label class="font-semibold text-texto-principal">Ubicación</label>
-                                <input v-model="formData.ubicacion_condensadora" type="text" required
-                                    class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
-                            </div>
-                            <div>
-                                <label class="font-semibold text-texto-principal">Capacidad</label>
-                                <select v-model="formData.capacidad_btu" required
-                                    class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
-                                    <option v-for="opcion in opcionesCapacidad" :key="opcion" :value="opcion">
-                                        {{ opcion }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="font-semibold text-texto-principal">Compresor</label>
-                                <select v-model="formData.estado_compresor"
-                                    class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
-                                    <option>Bueno</option>
-                                    <option>Regular</option>
-                                    <option>Deficiente</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                <div class="border-b border-borde mb-6">
+                    <nav class="flex justify-around items-center space-x-4">
+                        <button @click="activeTab = 'informacion'"
+                            :class="[activeTab === 'informacion' ? 'border-interactivo text-interactivo' : 'border-transparent text-texto-secundario hover:text-texto-principal']"
+                            class="w-full sm:w-3/4 py-2 px-1 border-b-2 font-medium text-sm transition-colors">Información</button>
+                        <button @click="activeTab = 'mantenimiento'"
+                            :class="[activeTab === 'mantenimiento' ? 'border-interactivo text-interactivo' : 'border-transparent text-texto-secundario hover:text-texto-principal']"
+                            class="w-full sm:w-3/4 py-2 px-1 border-b-2 font-medium text-sm transition-colors">Mantenimiento</button>
+                        <button @click="activeTab = 'historial'"
+                            :class="[activeTab === 'historial' ? 'border-interactivo text-interactivo' : 'border-transparent text-texto-secundario hover:text-texto-principal']"
+                            class="w-full sm:w-3/4 py-2 px-1 border-b-2 font-medium text-sm transition-colors">Historial</button>
+                    </nav>
                 </div>
 
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <div v-if="!isEditingObservaciones">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <DocumentTextIcon class="h-5 w-5" />
-                                Observaciones Permanentes
-                            </h2>
-                            <button @click="startEditing('observaciones')"
-                                class="text-gray-400/80 hover:text-texto-secundario p-1">
-                                <PencilSquareIcon class="h-5 w-5" />
-                            </button>
-                        </div>
-                        <p class="text-sm text-texto-secundario">{{ equipo.observaciones_permanentes || 'No hay observaciones permanentes registradas.' }}</p>
-                    </div>
-
-                    <div v-else>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <DocumentTextIcon class="h-5 w-5" />
-                                Editando Observaciones
-                            </h2>
-                            <div class="flex gap-2">
-                                <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
-                                    <CheckIcon class="h-5 w-5" />
-                                </button>
-                                <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
-                                    <XMarkIcon class="h-5 w-5" />
+                <div v-if="activeTab === 'informacion'" class="space-y-6">
+                    <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                        <div v-if="!isEditingInfo">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <Cog6ToothIcon class="h-5 w-5 text-texto-secundario" />
+                                    Información del Equipo
+                                </h2>
+                                <button @click="startEditing('info')"
+                                    class="text-gray-400/80 hover:text-texto-secundario p-1">
+                                    <PencilSquareIcon class="h-5 w-5" />
                                 </button>
                             </div>
-                        </div>
-                        <textarea v-model="formData.observaciones_permanentes" rows="4"
-                            class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario  text-sm"></textarea>
-                    </div>
-                </div>
-
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <div v-if="!isEditingProgramacion">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <CalendarDaysIcon class="h-5 w-5" />
-                                Ciclo de Mantenimiento
-                            </h2>
-                            <button @click="startEditing('programacion')"
-                                class="text-gray-400/80 hover:text-texto-secundario p-1">
-                                <PencilSquareIcon class="h-5 w-5" />
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 text-sm">
-                            <div>
-                                <p class="text-texto-secundario">Intervalo</p>
-                                <p class="font-semibold text-texto-principal">{{ equipo.intervalo_mantenimiento_dias }}
-                                    días
+                            <div class="text-sm space-y-2 text-texto-secundario">
+                                <p><span class="font-semibold text-texto-principal">Ubicación:</span> {{
+                                    equipo.ubicacion_condensadora
+                                }}
+                                </p>
+                                <p><span class="font-semibold text-texto-principal">Capacidad:</span> {{
+                                    equipo.capacidad_btu }}
+                                </p>
+                                <p><span class="font-semibold text-texto-principal">Compresor:</span> {{
+                                    equipo.estado_compresor }}
                                 </p>
                             </div>
-                            <div>
-                                <p class="text-texto-secundario">Último Mantenimiento</p>
-                                <p class="font-semibold text-texto-principal">{{ formatDate(equipo.ultimo_mantenimiento)
-                                    }}</p>
+                        </div>
+
+                        <div v-else>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <Cog6ToothIcon class="h-5 w-5 text-texto-secundario" />
+                                    Información del Equipo
+                                </h2>
+                                <div class="flex gap-2">
+                                    <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
+                                        <CheckIcon class="h-5 w-5" />
+                                    </button>
+                                    <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
+                                        <XMarkIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-texto-secundario">Próximo Mantenimiento</p>
-                                <p class="font-semibold text-texto-principal">{{ formatDate(estadoGeneral.proximo) }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-texto-secundario">Estado Actual</p>
-                                <p class="font-semibold text-texto-principal">{{ estadoGeneral.texto }}</p>
+
+                            <div class="text-sm space-y-3">
+                                <div>
+                                    <label class="font-semibold text-texto-principal">Ubicación</label>
+                                    <input v-model="formData.ubicacion_condensadora" type="text" required
+                                        class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
+                                </div>
+                                <div>
+                                    <label class="font-semibold text-texto-principal">Capacidad</label>
+                                    <select v-model="formData.capacidad_btu" required
+                                        class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
+                                        <option v-for="opcion in opcionesCapacidad" :key="opcion" :value="opcion">
+                                            {{ opcion }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="font-semibold text-texto-principal">Compresor</label>
+                                    <select v-model="formData.estado_compresor"
+                                        class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
+                                        <option>Bueno</option>
+                                        <option>Regular</option>
+                                        <option>Deficiente</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div v-else>
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-semibold text-texto-principal flex items-center gap-2">
-                                <CalendarDaysIcon class="h-5 w-5" />
-                                Editando Ciclo de Mantenimiento
-                            </h2>
-                            <div class="flex gap-2">
-                                <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
-                                    <CheckIcon class="h-5 w-5" />
+                    <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                        <div v-if="!isEditingObservaciones">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <DocumentTextIcon class="h-5 w-5" />
+                                    Observaciones Permanentes
+                                </h2>
+                                <button @click="startEditing('observaciones')"
+                                    class="text-gray-400/80 hover:text-texto-secundario p-1">
+                                    <PencilSquareIcon class="h-5 w-5" />
                                 </button>
-                                <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
-                                    <XMarkIcon class="h-5 w-5" />
+                            </div>
+                            <p class="text-sm text-texto-secundario">{{ equipo.observaciones_permanentes || 'No hay observaciones permanentes registradas.' }}</p>
+                        </div>
+
+                        <div v-else>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <DocumentTextIcon class="h-5 w-5" />
+                                    Editando Observaciones
+                                </h2>
+                                <div class="flex gap-2">
+                                    <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
+                                        <CheckIcon class="h-5 w-5" />
+                                    </button>
+                                    <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
+                                        <XMarkIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea v-model="formData.observaciones_permanentes" rows="4"
+                                class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario  text-sm"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div v-if="activeTab === 'mantenimiento'" class="space-y-6">
+                    <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                        <div v-if="!isEditingProgramacion">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <CalendarDaysIcon class="h-5 w-5" />
+                                    Ciclo de Mantenimiento
+                                </h2>
+                                <button @click="startEditing('programacion')"
+                                    class="text-gray-400/80 hover:text-texto-secundario p-1">
+                                    <PencilSquareIcon class="h-5 w-5" />
                                 </button>
                             </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
+                                <div>
+                                    <p class="text-sm text-texto-secundario">Intervalo</p>
+                                    <p class="text-2xl font-bold">{{ equipo.intervalo_mantenimiento_dias }} días</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-texto-secundario">Último Mtto.</p>
+                                    <p class="text-2xl font-bold">{{ formatDate(equipo.ultimo_mantenimiento) }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-texto-secundario">Próximo Mtto.</p>
+                                    <p class="text-2xl font-bold">{{ formatDate(estadoGeneral.proximo) }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-6">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm font-medium text-texto-principal">Progreso del ciclo</span>
+                                    <span class="text-sm font-medium text-texto-principal">{{ progresoCiclo.porcentaje
+                                        }}%</span>
+                                </div>
+                                <div class="w-full bg-fondo rounded-full h-2.5">
+                                    <div class="bg-interactivo h-2.5 rounded-full"
+                                        :style="{ width: progresoCiclo.porcentaje + '%' }">
+                                    </div>
+                                </div>
+                                <p class="text-xs text-texto-secundario text-right mt-1">{{
+                                    progresoCiclo.diasTranscurridos }} de {{
+                                    progresoCiclo.totalDias }} días transcurridos</p>
+                            </div>
                         </div>
-                        <div class="text-sm">
-                            <label class="font-semibold text-texto-principal">Intervalo de Mantenimiento (días)</label>
-                            <input v-model="formData.intervalo_mantenimiento_dias" type="number" required
-                                class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
-                            <p class="text-xs text-texto-secundario mt-2">Número de días entre mantenimientos
-                                preventivos</p>
+
+                        <div v-else>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="font-semibold text-texto-principal flex items-center gap-2">
+                                    <CalendarDaysIcon class="h-5 w-5" />
+                                    Editando Ciclo de Mantenimiento
+                                </h2>
+                                <div class="flex gap-2">
+                                    <button @click="saveChanges" class="text-green-500 hover:text-green-700 p-1">
+                                        <CheckIcon class="h-5 w-5" />
+                                    </button>
+                                    <button @click="cancelEditing" class="text-red-500 hover:text-red-700 p-1">
+                                        <XMarkIcon class="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-sm">
+                                <label class="font-semibold text-texto-principal">Intervalo de Mantenimiento
+                                    (días)</label>
+                                <input v-model="formData.intervalo_mantenimiento_dias" type="number" required
+                                    class="w-full p-2 mt-1 border border-borde rounded-md bg-fondo text-texto-secundario ">
+                                <p class="text-xs text-texto-secundario mt-2">Número de días entre mantenimientos
+                                    preventivos</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                        <h2 class="font-semibold text-texto-principal mb-4">Mantenimientos Programados</h2>
+
+                        <div v-if="mantenimientosProgramados.length > 0" class="space-y-3">
+                            <ProgramacionCard v-for="prog in mantenimientosProgramados" :key="prog.id"
+                                :programacion="prog" @cancelar="iniciarCancelacion(prog, 'mantenimientos_programados')"
+                                @editar="iniciarEdicionProgramacion(prog)" @completar="iniciarCompletado(prog)" />
+                        </div>
+
+                        <div v-else class="text-center text-texto-secundario text-sm py-4">
+                            <p>No hay mantenimientos programados para este equipo.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <h2 class="font-semibold text-texto-principal mb-4">Mantenimientos Programados</h2>
 
-                    <div v-if="mantenimientosProgramados.length > 0" class="space-y-3">
-                        <ProgramacionCard v-for="prog in mantenimientosProgramados" :key="prog.id" :programacion="prog"
-                            @cancelar="iniciarCancelacion(prog, 'mantenimientos_programados')"
-                            @editar="iniciarEdicionProgramacion(prog)" @completar="iniciarCompletado(prog)" />
-                    </div>
+                <div v-if="activeTab === 'historial'" class="space-y-6">
+                    <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
+                        <h2 class="font-semibold text-texto-principal mb-4">Historial de Mantenimiento</h2>
 
-                    <div v-else class="text-center text-texto-secundario text-sm py-4">
-                        <p>No hay mantenimientos programados para este equipo.</p>
-                    </div>
-                </div>
+                        <div v-if="historialMantenimientos.length === 0" class="text-center text-texto-secundario py-8">
+                            <p>No hay historial de mantenimiento registrado.</p>
+                            <p class="text-xs">Las tareas completadas aparecerán aquí.</p>
+                        </div>
 
-                <div class="bg-card p-4 border border-borde rounded-lg shadow-sm">
-                    <h2 class="font-semibold text-texto-principal mb-4">Historial de Mantenimiento</h2>
-
-                    <div v-if="historialMantenimientos.length === 0" class="text-center text-texto-secundario py-8">
-                        <p>No hay historial de mantenimiento registrado.</p>
-                        <p class="text-xs">Las tareas completadas aparecerán aquí.</p>
-                    </div>
-
-                    <div v-else class="space-y-4">
-                        <HistorialCard v-for="mtto in historialMantenimientos" :key="mtto.id" :mantenimiento="mtto"
-                            @borrar="iniciarBorradoHistorial(mtto)" @editar="iniciarEdicion(mtto)" />
+                        <div v-else class="space-y-4">
+                            <HistorialCard v-for="mtto in historialMantenimientos" :key="mtto.id" :mantenimiento="mtto"
+                                @borrar="iniciarBorradoHistorial(mtto)" @editar="iniciarEdicion(mtto)" />
+                        </div>
                     </div>
                 </div>
+
 
                 <div class="fixed bottom-0 left-0 right-0 bg-card p-4 border border-borde border-t shadow-lg">
                     <div class="w-full sm:w-4/5 md:w-2/3 lg:w-1/2 mx-auto flex gap-3">
@@ -553,13 +617,12 @@ const estadoGeneral = computed(() => {
             <ConfirmacionModal :show="confirmacionState.show" :titulo="confirmacionState.titulo"
                 :mensaje="confirmacionState.mensaje" textoConfirmar="Sí, confirmar" @close="cerrarConfirmacion"
                 @confirm="manejarConfirmacion" />
+            <RegistrarMttoModal :show="showModal" :equipoId="equipoId" :mantenimientoExistente="mantenimientoAEditar"
+                @close="cerrarModalRegistro" />
+
+            <ProgramarMttoModal :show="showProgramarModal" :equipoId="equipoId" :nombreDisplay="equipo.nombre_display"
+                :programacionExistente="programacionAEditar" @close="cerrarModalProgramacion" />
         </div>
-
-        <RegistrarMttoModal v-if="showModal" :show="showModal" :equipoId="equipoId" :mantenimientoExistente="mantenimientoAEditar" @close="cerrarModalRegistro" />
-
-        <ProgramarMttoModal v-if="showProgramarModal" :show="showProgramarModal" :equipoId="equipoId"
-            :nombreDisplay="equipo.nombre_display"  :programacionExistente="programacionAEditar"
-            @close="cerrarModalProgramacion" />
 
     </div>
 

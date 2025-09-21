@@ -27,8 +27,9 @@ const puedeModificar = computed(() => {
 </script>
 
 <template>
-    <div class="bg-car border border-borde rounded-lg p-3">
-        <div class="flex justify-between items-center">
+    <div class="bg-card border border-borde rounded-lg p-3">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+
             <div class="flex items-center gap-3">
                 <CalendarDaysIcon class="h-6 w-6 text-interactivo" />
                 <div>
@@ -36,11 +37,12 @@ const puedeModificar = computed(() => {
                     <p class="text-xs text-texto-secundario">Programado por: {{ programacion.creado_por_nombre }}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+
+            <div class="w-full md:w-auto flex items-center justify-between md:justify-end gap-4">
                 <span v-if="programacion.estado === 'Programado'"
-                    class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-800">Programado</span>
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">Programado</span>
                 <span v-if="programacion.estado === 'Cancelado'"
-                    class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800">Cancelado</span>
+                    class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">Cancelado</span>
 
                 <div v-if="puedeModificar && programacion.estado === 'Programado'" class="flex items-center gap-3">
                     <button @click.prevent="emit('completar')" class="text-texto-secundario hover:text-status-verde"
@@ -58,8 +60,22 @@ const puedeModificar = computed(() => {
                 </div>
             </div>
         </div>
-        <p v-if="programacion.notas" class="text-sm text-texto-secundario mt-2 border-t border-borde pt-2">
+
+        <p v-if="programacion.notas" class="text-sm text-texto-secundario mt-3 border-t border-borde pt-3">
             {{ programacion.notas }}
         </p>
     </div>
 </template>
+
+<style scoped>
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+    transition: all 0.2s ease-out;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+    transform: scale(0.95);
+}
+</style>

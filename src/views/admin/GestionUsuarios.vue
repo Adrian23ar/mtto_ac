@@ -1,10 +1,12 @@
 <script setup>
+// src/views/admin/GestionUsuarios.vue
 import { ref, onMounted } from 'vue';
 import { getFirestore, collection, getDocs, query, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { useToast } from 'vue-toastification';
 import CrearUsuarioModal from '../../components/CrearUsuarioModal.vue';
 import EditarUsuarioModal from '../../components/EditarUsuarioModal.vue';
 import ConfirmacionModal from '../../components/ConfirmacionModal.vue';
+import SkeletonLoader from '../../components/SkeletonLoader.vue';
 
 //iconos para editar y desactivar/activar
 import { PencilSquareIcon, PowerIcon, XMarkIcon } from '@heroicons/vue/24/solid';
@@ -87,7 +89,7 @@ const firebaseConfig = {
 
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
       <div>
         <h1 class="text-xl font-bold text-texto-principal">Gestión de Usuarios</h1>
         <p class="text-texto-secundario text-sm">Aquí podrás crear, ver, editar y eliminar usuarios.</p>
@@ -98,7 +100,39 @@ const firebaseConfig = {
       </button>
     </div>
 
-    <div v-if="cargando">Cargando...</div>
+    <div v-if="cargando" class="bg-card p-4 rounded-lg overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-texto-secundario uppercase bg-fondo">
+          <tr>
+            <th class="px-6 py-3 text-left">Nombre Completo</th>
+            <th class="px-6 py-3 text-left">Usuario</th>
+            <th class="px-6 py-3 text-left">Rol</th>
+            <th class="px-6 py-3 text-left">Estado</th>
+            <th class="px-6 py-3 text-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="n in 5" :key="n" class="border-b border-borde">
+            <td class="px-6 py-4">
+              <SkeletonLoader width="120px" />
+            </td>
+            <td class="px-6 py-4">
+              <SkeletonLoader width="80px" />
+            </td>
+            <td class="px-6 py-4">
+              <SkeletonLoader width="60px" />
+            </td>
+            <td class="px-6 py-4">
+              <SkeletonLoader width="70px" height="24px" borderRadius="999px" />
+            </td>
+            <td class="px-6 py-4 flex items-center gap-4">
+              <SkeletonLoader width="20px" height="20px" />
+              <SkeletonLoader width="20px" height="20px" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div v-else class="bg-card p-4 rounded-lg overflow-x-auto">
       <table class="w-full text-sm text-left ">
         <thead class="text-xs text-texto-secundario uppercase bg-fondo">

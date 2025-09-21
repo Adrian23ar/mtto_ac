@@ -87,7 +87,7 @@ const handleSubmit = async () => {
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Contraseña
-                                Temporal</label>
+                            </label>
                             <input v-model="password" type="password" required
                                 class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
                         </div>

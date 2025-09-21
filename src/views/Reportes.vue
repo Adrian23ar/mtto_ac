@@ -7,7 +7,6 @@ import { useToast } from 'vue-toastification';
 import HistorialCard from '../components/HistorialCard.vue';
 
 // ¡NUEVAS IMPORTACIONES PARA EXPORTAR!
-import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -124,44 +123,6 @@ const formatDateForExport = (timestamp) => {
     return timestamp.toDate().toLocaleDateString('es-ES');
 };
 
-const exportarAExcel = () => {
-    const dataParaExportar = [];
-
-    // Añadimos cada mantenimiento como una fila
-    for (const equipoId in detalles.value) {
-        const equipo = detalles.value[equipoId];
-        equipo.mantenimientos.forEach(mtto => {
-            dataParaExportar.push({
-                "Equipo": equipo.nombre_display,
-                "Fecha": formatDateForExport(mtto.fecha_realizado),
-                "Tipo": mtto.tipo,
-                "Técnico": mtto.tecnico_nombre,
-                "Duración (min)": mtto.duracion_minutos,
-                "Observaciones": mtto.observaciones_servicio,
-                "Tareas Preventivas": (mtto.tareas_realizadas.preventivas || []).join(', '),
-                "Tareas Correctivas": (mtto.tareas_realizadas.correctivas || []).join(', ')
-            });
-        });
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(dataParaExportar);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Detalle de Mantenimientos");
-
-    // Añadir una hoja para las métricas
-    const metricasData = [
-        { Métrica: "Total de Servicios", Valor: resultados.value.total },
-        { Métrica: " - Preventivos", Valor: resultados.value.preventivos },
-        { Métrica: " - Correctivos", Valor: resultados.value.correctivos },
-        { Métrica: "Tiempo Promedio Preventivo (min)", Valor: metricasAvanzadas.value.tiempoPromedio.preventivo },
-        { Métrica: "Tiempo Promedio Correctivo (min)", Valor: metricasAvanzadas.value.tiempoPromedio.correctivo },
-    ];
-    const metricasWorksheet = XLSX.utils.json_to_sheet(metricasData);
-    XLSX.utils.book_append_sheet(workbook, metricasWorksheet, "Resumen y Métricas");
-
-    XLSX.writeFile(workbook, `Reporte_Mantenimiento_${fechaInicio.value}_a_${fechaFin.value}.xlsx`);
-};
-
 const exportarAPDF = () => {
     const doc = new jsPDF();
     const fechaReporte = `Reporte del ${fechaInicio.value} al ${fechaFin.value}`;
@@ -265,11 +226,6 @@ const exportarAPDF = () => {
                 </div>
                 <h2 class="text-lg font-bold text-texto-principal text-center mt-6 mb-4">Exportar reporte como:</h2>
                 <div class="flex justify-center items-center gap-3">
-                    <button @click="exportarAExcel"
-                        class="flex items-center gap-2 bg-green-600 text-white text-sm font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-                        <DocumentArrowDownIcon class="h-5 w-5" />
-                        Excel
-                    </button>
                     <button @click="exportarAPDF"
                         class="flex items-center gap-2 bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
                         <DocumentArrowDownIcon class="h-5 w-5" />

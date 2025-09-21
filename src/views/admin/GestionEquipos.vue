@@ -1,10 +1,12 @@
 <script setup>
+// src/views/admin/GestionEquipos.vue
 import { ref, onMounted } from 'vue';
 import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { useToast } from 'vue-toastification';
 import { PencilSquareIcon, PowerIcon } from '@heroicons/vue/24/solid';
 import GestionEquipoModal from '../../components/GestionEquipoModal.vue';
 import ConfirmacionModal from '../../components/ConfirmacionModal.vue';
+import SkeletonLoader from '../../components/SkeletonLoader.vue';
 
 const toast = useToast();
 const db = getFirestore();
@@ -76,18 +78,50 @@ const manejarConfirmacion = () => {
 
 <template>
     <div>
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <div>
                 <h2 class="text-xl font-bold text-texto-principal">Gestión de Equipos</h2>
                 <p class="text-texto-secundario text-sm">Crea, edita y desactiva las habitaciones y sus equipos.</p>
             </div>
             <button @click="abrirModalCrear"
-                class="bg-interactivo text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
+                class="w-full sm:w-auto bg-interactivo text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
                 Crear Equipo
             </button>
         </div>
 
-        <div v-if="cargando">Cargando equipos...</div>
+        <div v-if="cargando" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="text-xs text-texto-secundario uppercase bg-fondo">
+                    <tr>
+                        <th class="px-6 py-3 text-left">Equipo</th>
+                        <th class="px-6 py-3 text-left">Capacidad</th>
+                        <th class="px-6 py-3 text-left">Compresor</th>
+                        <th class="px-6 py-3 text-left">Estado</th>
+                        <th class="px-6 py-3 text-left">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="n in 5" :key="n" class="border-b border-borde">
+                        <td class="px-6 py-4">
+                            <SkeletonLoader width="120px" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <SkeletonLoader width="80px" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <SkeletonLoader width="60px" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <SkeletonLoader width="70px" height="24px" borderRadius="999px" />
+                        </td>
+                        <td class="px-6 py-4 flex items-center gap-4">
+                            <SkeletonLoader width="20px" height="20px" />
+                            <SkeletonLoader width="20px" height="20px" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <div v-else class="overflow-x-auto">
             <table class="w-full text-sm text-left">
                 <thead class="text-xs text-texto-secundario uppercase bg-fondo">
