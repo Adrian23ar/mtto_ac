@@ -32,12 +32,13 @@ const puedeModificar = computed(() => {
         <div class="flex justify-between flex-wrap items-center border-b border-borde pb-2 mb-3">
             <div>
                 <p class="font-bold text-texto-principal">{{ formatDate(mantenimiento.fecha_realizado) }}</p>
-                <div class="flex items-center gap-4 text-sm text-texto-secundario mb-1 sm:mb-0">
-                    <span>Técnico: {{ mantenimiento.tecnico_nombre || mantenimiento.tecnico_email }}</span>
-                    <span class="flex items-center gap-1">
+                <div class="flex items-center flex-wrap gap-1 text-sm text-texto-secundario mb-2 sm:mb-0">
+                    <p>Técnico: {{ mantenimiento.tecnico_nombre || mantenimiento.tecnico_email }}</p>
+                    <p class="flex items-center gap-1 sm:mx-6 ">
                         <ClockIcon class="h-4 w-4" />
                         {{ mantenimiento.duracion_minutos }} min
-                    </span>
+                    </p>
+                    <p>Dificultad: {{ mantenimiento.dificultad }}</p>
                 </div>
             </div>
 
@@ -66,7 +67,8 @@ const puedeModificar = computed(() => {
         </div>
 
         <div class="text-sm space-y-3">
-            <p class="text-texto-secundario">{{ mantenimiento.observaciones_servicio || 'Sin observaciones.' }}</p>
+            <p class="text-texto-principal font-semibold mb-1">Observaciones del mantenimiento:</p>
+            <span class="text-texto-secundario">{{ mantenimiento.observaciones_servicio || 'Sin observaciones.' }}</span>
 
             <div
                 v-if="mantenimiento.tareas_realizadas.preventivas && mantenimiento.tareas_realizadas.preventivas.length > 0">

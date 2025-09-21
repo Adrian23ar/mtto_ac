@@ -20,6 +20,7 @@ const { userProfile } = useAuth(); // <-- Obtén el perfil del usuario
 const toast = useToast();
 const duracion = ref(30);
 const observaciones = ref('');
+const dificultad = ref('Bajo'); // <-- 1. AÑADIMOS EL NUEVO ESTADO
 const tareasCompletadas = ref({});
 const isSaving = ref(false);
 const openSection = ref('preventivas'); // Esta ya la tienes
@@ -52,6 +53,7 @@ watchEffect(() => {
     if (props.show && props.mantenimientoExistente) {
         observaciones.value = props.mantenimientoExistente.observaciones_servicio || '';
         duracion.value = props.mantenimientoExistente.duracion_minutos || 30;
+      dificultad.value = props.mantenimientoExistente.dificultad || 'Bajo'; // <-- 2. CARGAMOS EL VALOR AL EDITAR
 
         if (props.mantenimientoExistente.tareas_realizadas) {
             const completadas = {};
@@ -70,6 +72,7 @@ watchEffect(() => {
         }
     } else if (props.show) {
         observaciones.value = '';
+              dificultad.value = 'Bajo'; // <-- 2. RESETEAMOS EL VALOR AL CREAR
         duracion.value = 30;
         tareasCompletadas.value = {};
     }
@@ -110,6 +113,8 @@ const handleSubmit = async () => {
             batch.update(mantenimientoRef, {
                 duracion_minutos: duracion.value,
                 observaciones_servicio: observaciones.value,
+                            dificultad: dificultad.value, // <-- 4. AÑADIMOS EL CAMPO A LOS DATOS
+
                 tareas_realizadas: tareasRealizadas,
                 tipo: tipoPrincipal
             });
@@ -173,7 +178,7 @@ const handleSubmit = async () => {
                         </button>
                     </div>
 
-                    <div class="p-6 grid grid-cols-1 gap-6">
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-3">
                             <div>
                                 <button @click="toggleSection('preventivas')" type="button"
@@ -232,18 +237,26 @@ const handleSubmit = async () => {
 
                         <div class="space-y-4">
                             <div>
+                                <label for="dificultad" class="block text-sm font-semibold text-texto-principal mb-1">Dificultad del Mantenimiento</label>
+                                <select id="dificultad" v-model="dificultad" class="w-full p-2 border border-borde bg-card text-texto-principal focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-interactivo rounded-md">
+                                    <option>Bajo</option>
+                                    <option>Intermedio</option>
+                                    <option>Alto</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label for="duracion"
                                     class="block text-sm font-semibold text-texto-principal mb-1">Duración
                                     (minutos)</label>
                                 <input type="number" id="duracion" required min="1" v-model="duracion"
-                                    class="w-full p-2 border border-borde bg-fondo text-texto-principal focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-interactivo rounded-md">
+                                    class="w-full p-2 border border-borde bg-card text-texto-principal focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-interactivo rounded-md">
                             </div>
                             <div>
                                 <label for="observaciones"
                                     class="block text-sm font-semibold text-texto-principal mb-1">Observaciones del
                                     Servicio</label>
                                 <textarea id="observaciones" v-model="observaciones" rows="5"
-                                    class="w-full p-2 border border-borde bg-fondo text-texto-principal focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-interactivo0. rounded-md"></textarea>
+                                    class="w-full p-2 border border-borde bg-card text-texto-principal focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-interactivo0. rounded-md"></textarea>
                             </div>
                         </div>
                     </div>

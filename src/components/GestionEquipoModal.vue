@@ -37,7 +37,7 @@ watchEffect(() => {
                 ubicacion_condensadora: '',
                 capacidad_btu: '12,000 BTU',
                 estado_compresor: 'Bueno',
-                intervalo_mantenimiento_dias: 90,
+                intervalo_mantenimiento_dias: 365,
                 observaciones_permanentes: '',
                 estado: 'activo'
             };
