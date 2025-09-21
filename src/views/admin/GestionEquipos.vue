@@ -84,7 +84,7 @@ const manejarConfirmacion = () => {
                 <p class="text-texto-secundario text-sm">Crea, edita y desactiva las habitaciones y sus equipos.</p>
             </div>
             <button @click="abrirModalCrear"
-                class="w-full sm:w-auto bg-interactivo text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
+                class="w-full sm:w-auto bg-interactivo hover:bg-interactivo-dark transition-colors text-sm md:text-base text-white py-2 px-4 rounded-lg font-semibold">
                 Crear Equipo
             </button>
         </div>

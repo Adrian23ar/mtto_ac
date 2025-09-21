@@ -13,7 +13,7 @@ defineEmits(['close', 'confirm']);
     <Transition name="modal-fade">
         <div v-if="show" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
 
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
+            <div class="bg-fondo rounded-lg shadow-xl w-full max-w-md transform transition-all">
                 <div class="p-4 border-b">
                     <h3 class="text-lg font-bold text-texto-principal">{{ titulo }}</h3>
                 </div>
@@ -24,7 +24,7 @@ defineEmits(['close', 'confirm']);
 
                 <div class="p-4 bg-card flex justify-end gap-3 rounded-b-lg">
                     <button @click="$emit('close')" type="button"
-                        class="bg-gray-200 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition-colors">
+                        class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                         Cancelar
                     </button>
                     <button @click="$emit('confirm')" type="button"

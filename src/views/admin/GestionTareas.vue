@@ -239,13 +239,13 @@ const manejarConfirmacion = () => {
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Nombre de la
                                 Tarea</label>
                             <input v-model="tareaActual.label" type="text" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div class="p-4 bg-fondo flex justify-end gap-3 rounded-b-lg">
                             <button @click="showModal = false" type="button"
-                                class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                                class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
                             <button type="submit" :disabled="isSaving"
-                                class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">
+                                class="bg-interactivo hover:bg-interactivo-dark transition-colors text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">
                                 {{ isSaving ? 'Guardando...' : 'Guardar' }}
                             </button>
                         </div>

@@ -77,24 +77,24 @@ const handleSubmit = async () => {
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Nombre Completo</label>
                             <input v-model="nombreCompleto" type="text" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Nombre de
                                 Usuario</label>
                             <input v-model="nombreUsuario" type="text" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Contraseña
                             </label>
                             <input v-model="password" type="password" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Rol</label>
                             <select v-model="rol"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-secundario focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                                 <option value="tecnico">Técnico</option>
                                 <option value="admin">Administrador</option>
                             </select>

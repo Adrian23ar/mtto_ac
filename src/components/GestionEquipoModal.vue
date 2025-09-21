@@ -95,7 +95,7 @@ const handleSubmit = async () => {
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Tipo de Área</label>
                             <select v-model="formData.tipo" :disabled="!!equipo"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700 focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                                 <option value="habitacion">Habitación</option>
                                 <option value="area_comun">Área Común</option>
                             </select>
@@ -105,19 +105,19 @@ const handleSubmit = async () => {
                             <label class="block text-sm font-semibold text-texto-principal mb-1">{{ labelIdentificador
                                 }}</label>
                             <input v-model="formData.identificador" type="text" required :disabled="!!equipo"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal disabled:bg-gray-200 dark:disabled:bg-gray-700 focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Ubicación
                                 Condensadora</label>
                             <input v-model="formData.ubicacion_condensadora" type="text"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Capacidad</label>
                             <select v-model="formData.capacidad_btu"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                                 <option v-for="op in opcionesCapacidad" :key="op" :value="op">{{ op }}</option>
                             </select>
                         </div>
@@ -125,7 +125,7 @@ const handleSubmit = async () => {
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Estado del
                                 Compresor</label>
                             <select v-model="formData.estado_compresor"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                                 <option v-for="op in opcionesCompresor" :key="op" :value="op">{{ op }}</option>
                             </select>
                         </div>
@@ -133,20 +133,20 @@ const handleSubmit = async () => {
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Intervalo de
                                 Mantenimiento (días)</label>
                             <input v-model="formData.intervalo_mantenimiento_dias" type="number" min="1" required
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal">
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-semibold text-texto-principal mb-1">Observaciones
                                 Permanentes</label>
                             <textarea v-model="formData.observaciones_permanentes" rows="3"
-                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal"></textarea>
+                                class="w-full p-2 border rounded-md bg-fondo border-borde text-texto-principal focus:ring-1 focus:ring-interactivo focus-within:outline-none"></textarea>
                         </div>
                     </div>
                     <div class="p-4 bg-fondo flex justify-end gap-3 rounded-b-lg">
                         <button @click="$emit('close')" type="button"
-                            class="bg-gray-200 dark:bg-gray-700 text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
+                            class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-texto-principal px-4 py-2 rounded-lg font-semibold text-sm">Cancelar</button>
                         <button type="submit" :disabled="isSaving"
-                            class="bg-interactivo text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{
+                            class="bg-interactivo hover:bg-interactivo-dark transition-colors text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:bg-gray-400">{{
                                 isSaving ? 'Guardando...' : 'Guardar'
                             }}</button>
                     </div>

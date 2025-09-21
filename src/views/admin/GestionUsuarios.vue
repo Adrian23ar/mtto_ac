@@ -95,7 +95,7 @@ const firebaseConfig = {
         <p class="text-texto-secundario text-sm">Aquí podrás crear, ver, editar y eliminar usuarios.</p>
       </div>
       <button @click="showCrearModal = true"
-        class="bg-interactivo text-white text-sm md:text-base py-2 px-4 rounded-lg font-semibold">
+        class="bg-interactivo hover:bg-interactivo-dark transition-colors text-white text-sm md:text-base py-2 px-4 rounded-lg font-semibold">
         Crear Usuario
       </button>
     </div>
@@ -156,11 +156,11 @@ const firebaseConfig = {
               </span>
             </td>
             <td class="px-6 py-4 flex items-center gap-4">
-              <button @click="iniciarEdicion(usuario)" class="font-medium text-interactivo hover:underline">
+              <button @click="iniciarEdicion(usuario)" class="font-medium text-interactivo hover:text-interactivo-dark transition-colors">
                 <PencilSquareIcon class="h-5 w-5" />
               </button>
-              <button @click="toggleEstadoUsuario(usuario)" class="font-medium"
-                :class="usuario.estado === 'activo' ? 'text-status-rojo hover:underline' : 'text-status-verde hover:underline'">
+              <button @click="toggleEstadoUsuario(usuario)" class="font-medium transition-colors"
+                :class="usuario.estado === 'activo' ? 'text-status-rojo hover:text-red-700' : 'text-status-verde hover:text-green-700'">
                 <PowerIcon class="h-5 w-5" />
               </button>
             </td>

@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification';
 import { auth } from '../firebase/config.js';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { ShieldCheckIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
 
 const usuario = ref('');
 const password = ref('');
@@ -52,6 +53,14 @@ const handleLogin = async () => {
     <div class="bg-interactivo h-screen flex justify-center items-center p-4">
 
         <div class="w-full max-w-md">
+            <div class="text-center mb-1 space-x-4">
+                <div class="p-2 rounded-full bg-white inline-block">
+                    <BuildingOfficeIcon class="h-10 w-10 text-interactivo" />
+                </div>
+                <div class="p-2 rounded-full bg-white inline-block">
+                    <ShieldCheckIcon class="h-10 w-10 text-interactivo" />
+                </div>
+            </div>
             <div class="text-center text-white mb-6">
                 <p class="text-3xl font-bold mb-2">Sistema de Mantenimiento</p>
                 <span class="font-light">Gestión de Aires Acondicionados</span>
@@ -78,7 +87,7 @@ const handleLogin = async () => {
                     </div>
                     <button type="submit" :disabled="isLoading"
                         class="w-full bg-interactivo hover:bg-opacity-90 text-sm text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
-                        {{ isLoading ? 'Verificando...' : 'Iniciar Sesión' }}
+                        {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
                     </button>
                 </form>
                 <p class="text-sm text-gray-500 mt-8 text-center">¿Problemas para acceder? <span
