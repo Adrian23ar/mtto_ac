@@ -6,10 +6,6 @@ import { getFirestore, collection, query, where, getDocs, doc, getDoc, Timestamp
 import { useToast } from 'vue-toastification';
 import HistorialCard from '../components/HistorialCard.vue';
 
-// ¡NUEVAS IMPORTACIONES PARA EXPORTAR!
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 const toast = useToast();
 const db = getFirestore();
 const router = useRouter();
@@ -123,7 +119,10 @@ const formatDateForExport = (timestamp) => {
     return timestamp.toDate().toLocaleDateString('es-ES');
 };
 
-const exportarAPDF = () => {
+const exportarAPDF = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
+
     const doc = new jsPDF();
     const fechaReporte = `Reporte del ${fechaInicio.value} al ${fechaFin.value}`;
 

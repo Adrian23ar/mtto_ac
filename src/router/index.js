@@ -3,17 +3,10 @@ import { createWebHistory, createRouter } from 'vue-router';
 import { auth } from '../firebase/config'; // Importamos auth para revisar la sesión
 import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
 
-// Importamos nuestras vistas y el nuevo layout
-import LoginView from '../views/login.vue';
-import DashboardView from '../views/Dashboard.vue';
+// Importamos los layouts de forma estática porque son necesarios siempre
 import AppLayout from '../layouts/AppLayout.vue';
-import DetalleEquipoView from '../views/DetalleEquipo.vue'; // <-- Añade esta importación
-import ReportesView from '../views/Reportes.vue';
-
 import AdminWrapper from '../views/admin/AdminWrapper.vue';
-import GestionUsuariosView from '../views/admin/GestionUsuarios.vue';
-import GestionEquiposView from '../views/admin/GestionEquipos.vue';
-import GestionTareas from '../views/admin/GestionTareas.vue';
+import LoginView from '../views/Login.vue';
 
 const routes = [
     {
@@ -22,46 +15,48 @@ const routes = [
         component: LoginView,
     },
     {
-        path: '/', // La raíz ahora será el layout principal
+        path: '/',
         component: AppLayout,
-        meta: { requiresAuth: true }, // Marcamos estas rutas como protegidas
+        meta: { requiresAuth: true },
         children: [
+            // --- CAMBIO AQUÍ: Usamos importación dinámica para cada vista ---
             {
                 path: 'dashboard',
                 name: 'dashboard',
-                component: DashboardView,
+                component: () => import('../views/Dashboard.vue'),
             },
             {
-                path: 'equipo/:id', // ':id' es el parámetro dinámico
+                path: 'equipo/:id',
                 name: 'detalle-equipo',
-                component: DetalleEquipoView,
+                component: () => import('../views/DetalleEquipo.vue'),
             },
             {
                 path: 'reportes',
                 name: 'reportes',
-                component: ReportesView,
+                component: () => import('../views/Reportes.vue'),
             }
         ],
     },
     {
         path: '/admin',
         component: AdminWrapper,
-        meta: { requiresAuth: true, requiresAdmin: true }, // <-- Doble protección
+        meta: { requiresAuth: true, requiresAdmin: true },
         children: [
+            // --- CAMBIO AQUÍ: También para las vistas de admin ---
             {
                 path: 'usuarios',
                 name: 'admin-usuarios',
-                component: GestionUsuariosView,
+                component: () => import('../views/admin/GestionUsuarios.vue'),
             },
             {
                 path: 'equipos',
                 name: 'admin-equipos',
-                component: GestionEquiposView,
+                component: () => import('../views/admin/GestionEquipos.vue'),
             },
             {
                 path: 'tareas',
                 name: 'admin-tareas',
-                component: GestionTareas,
+                component: () => import('../views/admin/GestionTareas.vue'),
             },
         ]
     }
