@@ -122,42 +122,50 @@ const manejarConfirmacion = () => {
                 </tbody>
             </table>
         </div>
-        <div v-else class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
-                <thead class="text-xs text-texto-secundario uppercase bg-fondo">
-                    <tr>
-                        <th class="px-6 py-3">Habitación</th>
-                        <th class="px-6 py-3">Capacidad</th>
-                        <th class="px-6 py-3">Compresor</th>
-                        <th class="px-6 py-3">Estado</th>
-                        <th class="px-6 py-3">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="equipo in equipos" :key="equipo.id" class="border-b border-borde">
-                        <td class="px-6 py-4 font-medium text-texto-principal">{{ equipo.nombre_display }}</td>
-                        <td class="px-6 py-4 text-texto-secundario">{{ equipo.capacidad_btu }}</td>
-                        <td class="px-6 py-4 text-texto-secundario">{{ equipo.estado_compresor }}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
-                                :class="equipo.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'">
-                                {{ equipo.estado || 'activo' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 flex items-center gap-4">
-                            <button @click="abrirModalEditar(equipo)"
-                                class="font-medium text-interactivo hover:underline">
-                                <PencilSquareIcon class="h-5 w-5" />
+        <div v-else>
+            <div v-if="equipos.length === 0">
+                <div class="text-center text-sm text-texto-secundario bg-fondo p-4 rounded-md">
+                    <p>No hay equipos registrados.</p>
+                </div>
+            </div>
+            <div v-else class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-texto-secundario uppercase bg-fondo">
+                        <tr>
+                            <th class="px-6 py-3">Habitación</th>
+                            <th class="px-6 py-3">Capacidad</th>
+                            <th class="px-6 py-3">Compresor</th>
+                            <th class="px-6 py-3">Estado</th>
+                            <th class="px-6 py-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="equipo in equipos" :key="equipo.id" class="border-b border-borde">
+                            <td class="px-6 py-4 font-medium text-texto-principal">{{ equipo.nombre_display }}</td>
+                            <td class="px-6 py-4 text-texto-secundario">{{ equipo.capacidad_btu }}</td>
+                            <td class="px-6 py-4 text-texto-secundario">{{ equipo.estado_compresor }}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full capitalize"
+                                    :class="equipo.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'">
+                                    {{ equipo.estado || 'activo' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 flex items-center gap-4">
+                                <button @click="abrirModalEditar(equipo)"
+                                    class="font-medium text-interactivo hover:underline">
+                                    <PencilSquareIcon class="h-5 w-5" />
 
-                            </button>
-                            <button @click="iniciarToggleEstado(equipo)" class="font-medium"
-                                :class="equipo.estado === 'activo' ? 'text-status-rojo hover:underline' : 'text-status-verde hover:underline'">
-                                <PowerIcon class="h-5 w-5" />
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                </button>
+                                <button @click="iniciarToggleEstado(equipo)" class="font-medium"
+                                    :class="equipo.estado === 'activo' ? 'text-status-rojo hover:underline' : 'text-status-verde hover:underline'">
+                                    <PowerIcon class="h-5 w-5" />
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
     <GestionEquipoModal :show="showGestionModal" :equipo="equipoSeleccionado" @close="showGestionModal = false"
