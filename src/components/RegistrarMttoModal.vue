@@ -38,7 +38,6 @@ onMounted(() => {
 });
 
 const toggleSection = (section) => {
-    // Si la sección clickeada ya está abierta, la cerramos. Si no, la abrimos.
     openSection.value = openSection.value === section ? null : section;
 };
 
@@ -127,6 +126,7 @@ const handleSubmit = async () => {
                 tipo: tipoPrincipal,
                 duracion_minutos: duracion.value,
                 observaciones_servicio: observaciones.value,
+                dificultad: dificultad.value,
                 tareas_realizadas: tareasRealizadas,
                 fecha_realizado: serverTimestamp(),
                 tecnico_uid: user.uid,

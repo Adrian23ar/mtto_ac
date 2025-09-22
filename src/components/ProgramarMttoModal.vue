@@ -71,7 +71,7 @@ const handleSubmit = async () => {
                 fecha_creacion: serverTimestamp(),
             });
 
-            toast.success(`Mantenimiento para la habitación ${props.numeroHabitacion} programado con éxito.`);
+            toast.success(`Mantenimiento para la habitación ${props.nombreDisplay} programado con éxito.`);
         }
         emit('close');
     } catch (error) {

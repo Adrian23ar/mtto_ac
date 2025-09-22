@@ -1,9 +1,8 @@
 // src/router/index.js
 import { createWebHistory, createRouter } from 'vue-router';
 import { auth } from '../firebase/config'; // Importamos auth para revisar la sesión
-import { useAuth } from '../composables/useAuth'; // <-- Importa el composable
+import { useAuth } from '../composables/useAuth';
 
-// Importamos los layouts de forma estática porque son necesarios siempre
 import AppLayout from '../layouts/AppLayout.vue';
 import AdminWrapper from '../views/admin/AdminWrapper.vue';
 import LoginView from '../views/Login.vue';
@@ -19,7 +18,10 @@ const routes = [
         component: AppLayout,
         meta: { requiresAuth: true },
         children: [
-            // --- CAMBIO AQUÍ: Usamos importación dinámica para cada vista ---
+            {
+                path: '',
+                redirect: '/dashboard'
+            },
             {
                 path: 'dashboard',
                 name: 'dashboard',
@@ -42,7 +44,6 @@ const routes = [
         component: AdminWrapper,
         meta: { requiresAuth: true, requiresAdmin: true },
         children: [
-            // --- CAMBIO AQUÍ: También para las vistas de admin ---
             {
                 path: 'usuarios',
                 name: 'admin-usuarios',

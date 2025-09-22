@@ -513,15 +513,15 @@ const estadoGeneral = computed(() => {
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center md:text-left">
                                 <div>
                                     <p class="text-sm text-texto-secundario">Intervalo</p>
-                                    <p class="text-2xl font-bold">{{ equipo.intervalo_mantenimiento_dias }} días</p>
+                                    <p class="text-2xl font-bold text-texto-principal">{{ equipo.intervalo_mantenimiento_dias }} días</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-texto-secundario">Último Mtto.</p>
-                                    <p class="text-2xl font-bold">{{ formatDate(equipo.ultimo_mantenimiento) }}</p>
+                                    <p class="text-2xl font-bold text-texto-principal">{{ formatDate(equipo.ultimo_mantenimiento) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-texto-secundario">Próximo Mtto.</p>
-                                    <p class="text-2xl font-bold">{{ formatDate(estadoGeneral.proximo) }}</p>
+                                    <p class="text-2xl font-bold text-texto-principal">{{ formatDate(estadoGeneral.proximo) }}</p>
                                 </div>
                             </div>
                             <div class="mt-6">
